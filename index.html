@@ -281,14 +281,22 @@
                             <i class="fa-solid fa-users mr-1"></i>Todas las Mesas
                         </button>
                         <button onclick="setFloorViewMode('MAPA')" id="btn-view-mapa" class="px-2.5 py-1 rounded-lg text-xs font-black bg-amber-500 text-slate-950 transition-all">
-                            <i class="fa-solid fa-map-location-dot mr-1"></i>Plano Real
+                            <i class="fa-solid fa-map-location-dot mr-1"></i>Plano Exacto
                         </button>
-                        <button onclick="setFloorViewMode('CUADRICULA')" id="btn-view-grid" class="px-2.5 py-1 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-all">
-                            <i class="fa-solid fa-table-cells-large mr-1"></i>Tarjetas Celular
+                        <button onclick="toggleMobileMapZoom()" id="btn-mobile-map-zoom" class="md:hidden px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-800 text-cyan-300 border border-cyan-500/30 transition-all ml-1" title="Alternar entre ver todo el plano ajustado a la pantalla del teléfono o tamaño grande deslizable">
+                            <i class="fa-solid fa-magnifying-glass-plus mr-1"></i><span id="label-mobile-zoom">Zoom 100%</span>
+                        </button>
+                        <button onclick="setFloorViewMode('CUADRICULA')" id="btn-view-grid" class="px-2.5 py-1 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-all ml-1">
+                            <i class="fa-solid fa-layer-group mr-1"></i>Tarjetas
                         </button>
                     </div>
                     <button onclick="toggleTableLayoutEditMode()" id="btn-toggle-layout-mode" class="px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500 hover:text-slate-950 text-amber-300 border border-amber-500/50 font-extrabold text-xs flex items-center gap-1.5 transition-all shadow">
                         <i class="fa-solid fa-up-down-left-right"></i>
+                        <span id="label-layout-mode">Diseñar Plano (Mover Mesas)</span>
+                    </button>
+                </div>
+            </div>
+
             <!-- BANNER DE RENDICIÓN DE DINERO DEL SALONERO (SIEMPRE VISIBLE EN VISTA MESAS) -->
             <div id="waiter-pending-remittance-banner" class="bg-gradient-to-r from-amber-950 via-slate-900 to-emerald-950/80 border-2 border-amber-400 rounded-2xl p-4 shadow-2xl space-y-3">
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-amber-500/30 pb-3">
@@ -374,15 +382,17 @@
                 </div>
             </div>
 
-            <!-- Interactive 2D Restaurant Floor Map Canvas -->
-            <div id="floor-map-wrapper" class="relative w-full overflow-x-auto rounded-3xl border-2 border-slate-800 bg-slate-950 shadow-2xl">
-                <div id="floor-map-canvas" class="relative min-w-[980px] h-[660px] w-full select-none overflow-hidden" style="background-image: radial-gradient(rgba(148, 163, 184, 0.14) 1px, transparent 1px); background-size: 24px 24px;">
-                    <!-- Populated dynamically with draggable tables, chairs & landmarks -->
+            <!-- Interactive 2D Restaurant Floor Map Canvas (Idéntico en Computadora, Tablet y Teléfono con Auto-Escala) -->
+            <div id="floor-map-wrapper" class="relative w-full overflow-x-auto overflow-y-hidden rounded-3xl border-2 border-slate-800 bg-slate-950 shadow-2xl">
+                <div id="floor-map-scale-holder" class="relative w-full transition-all">
+                    <div id="floor-map-canvas" class="relative w-[980px] h-[760px] select-none overflow-hidden origin-top-left" style="background-image: radial-gradient(rgba(148, 163, 184, 0.14) 1px, transparent 1px); background-size: 24px 24px;">
+                        <!-- Populated dynamically with visual zone areas, draggable tables, chairs & landmarks -->
+                    </div>
                 </div>
             </div>
 
-            <!-- Optional Classic Grid View -->
-            <div id="tables-grid" class="hidden grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5">
+            <!-- Optional Classic Grid View (Now Grouped by Section & Ordered by Floor Coordinates) -->
+            <div id="tables-grid" class="hidden space-y-5">
                 <!-- Populated dynamically by JS -->
             </div>
         </section>
@@ -1871,16 +1881,16 @@
     <!-- ========================================================================= -->
     <!-- NUEVO MODAL: COBRO DEL SALONERO AL CLIENTE Y RENDICIÓN A CAJA             -->
     <!-- ========================================================================= -->
-    <div id="modal-waiter-collect" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-5">
-        <div class="bg-slate-900 border-2 border-emerald-400 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[94vh]">
+    <div id="modal-waiter-collect" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 hidden flex items-center justify-center p-2 sm:p-5">
+        <div class="bg-slate-900 border-2 border-emerald-400 w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh]">
             <div class="p-4 sm:p-5 bg-slate-950 border-b border-slate-800 flex items-center justify-between gap-2">
                 <div class="flex items-center gap-3">
                     <div class="w-11 h-11 rounded-2xl bg-emerald-400 text-slate-950 flex items-center justify-center text-xl font-black shadow-lg">
                         <i class="fa-solid fa-hand-holding-dollar"></i>
                     </div>
                     <div>
-                        <span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Cobro en Mesa por Salonero</span>
-                        <h3 id="wcol-table-title" class="font-black text-white text-base sm:text-lg mt-0.5">Reportar Cobro a Caja - Mesa 1</h3>
+                        <span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Cobro Directo en Mesa por Salonero</span>
+                        <h3 id="wcol-table-title" class="font-black text-white text-base sm:text-lg mt-0.5">Cobrar Cuenta de Mesa</h3>
                     </div>
                 </div>
                 <button onclick="closeWaiterCollectModal()" class="w-9 h-9 rounded-xl bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
@@ -1889,9 +1899,28 @@
             </div>
 
             <div class="p-4 sm:p-5 overflow-y-auto space-y-4 text-xs">
-                <div class="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 leading-relaxed">
-                    <i class="fa-solid fa-circle-info text-amber-400 mr-1"></i>
-                    Registra cómo te pagó el cliente. <strong>La mesa y el saldo seguirán asignados a tu cuenta</strong> hasta que entregues el dinero en la Caja y el Cajero lo acepte.
+                <!-- Selector Rápido de Mesa a Cobrar -->
+                <div class="p-3 rounded-2xl bg-slate-950 border-2 border-amber-500/50 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <label class="text-[11px] font-black uppercase text-amber-400"><i class="fa-solid fa-utensils mr-1"></i>1. Mesa que vas a cobrar ahora:</label>
+                        <span id="wcol-waiter-badge" class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-emerald-300">Salonero</span>
+                    </div>
+                    <select id="wcol-table-selector" onchange="switchWaiterCollectTable(this.value)" class="w-full bg-slate-900 border border-amber-400/50 rounded-xl px-3 py-2.5 text-sm font-black text-white focus:border-emerald-400 focus:outline-none">
+                        <!-- Populated dynamically with occupied tables -->
+                    </select>
+                </div>
+
+                <!-- Lista Detallada de lo que consumió la mesa para que el salonero le diga al cliente -->
+                <div class="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                        <span class="text-[11px] font-black uppercase text-emerald-400"><i class="fa-solid fa-receipt mr-1"></i>2. Detalle de Consumo a Cobrar al Cliente:</span>
+                        <button onclick="previewPrebillFromWaiterCollect()" class="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500 text-sky-300 hover:text-slate-950 font-bold text-[11px] transition-all">
+                            <i class="fa-solid fa-print mr-1"></i>Ver / Imprimir Recibo Precuenta
+                        </button>
+                    </div>
+                    <div id="wcol-items-breakdown" class="space-y-1.5 max-h-40 overflow-y-auto pr-1 divide-y divide-slate-900">
+                        <!-- Populated dynamically by JS -->
+                    </div>
                 </div>
 
                 <!-- Resumen de Totales e Inclusión de Propina -->
@@ -2641,7 +2670,8 @@
         let lastReceiptText = '';
         let isAdminAuthenticated = false;
         let isTableLayoutEditMode = false;
-        let floorViewMode = 'MAPA'; // 'MAPA' (Plano 2D libre) | 'CUADRICULA'
+        let floorViewMode = 'MAPA'; // 'MAPA' (Plano 2D libre en PC, Tablet y Teléfono) | 'CUADRICULA'
+        let mobileMapFitToScreen = true; // En teléfono ajusta todo el plano 2D proporcionalmente para verse igual que en PC/Tablet
         let draggingMapItem = null;
         let editingSaleId = null;
         let qrPortalTableId = null;
@@ -2760,10 +2790,10 @@
                     { id: 'c3', name: 'Roberto Chen (Oficina)', phone: '6555-8899', address: 'Plaza Terronal, Local 12B, David', ordersCount: 8 }
                 ],
                 landmarks: [
-                    { id: 'lm_entrada', name: '🚪 ENTRADA PRINCIPAL', x: 42, y: 90, icon: 'fa-door-open', color: 'slate' },
-                    { id: 'lm_caja', name: '💵 CAJA REGISTRADORA', x: 8, y: 84, icon: 'fa-cash-register', color: 'emerald' },
-                    { id: 'lm_barra', name: '🍸 BARRA & COCTELERÍA', x: 74, y: 12, icon: 'fa-martini-glass-citrus', color: 'cyan' },
-                    { id: 'lm_cocina', name: '🔥 PASE DE COCINA', x: 40, y: 6, icon: 'fa-fire-burner', color: 'orange' }
+                    { id: 'lm_entrada', name: '🚪 ENTRADA PRINCIPAL', x: 38, y: 74, icon: 'fa-door-open', color: 'slate' },
+                    { id: 'lm_caja', name: '💵 CAJA REGISTRADORA', x: 5, y: 74, icon: 'fa-cash-register', color: 'emerald' },
+                    { id: 'lm_barra', name: '🍸 BARRA & COCTELERÍA', x: 66, y: 6, icon: 'fa-martini-glass-citrus', color: 'cyan' },
+                    { id: 'lm_cocina', name: '🔥 PASE DE COCINA', x: 24, y: 4, icon: 'fa-fire-burner', color: 'orange' }
                 ],
                 menuCatalog: JSON.parse(JSON.stringify(DEFAULT_MENU_CATALOG)),
                 stock: {
@@ -2811,35 +2841,35 @@
                     { time: '19:42', table: 'Mesa 5', item: 'Cerveza Nacional Fría ($2.50)', reason: 'Error de digitación del salonero', waiter: 'Ana P.' }
                 ],
                 tables: [
-                    { id: 1, name: 'Mesa 1 (Esquina Izq)', zone: 'Salón Principal', seats: 4, shape: 'RECT', x: 8, y: 16, status: 'LIBRE', waiter: '', openedAt: null, prebillRequested: false, items: [] },
+                    { id: 1, name: 'Mesa 1 (Esquina Izq)', zone: 'Salón Principal', seats: 4, shape: 'RECT', x: 6, y: 15, status: 'LIBRE', waiter: '', openedAt: null, prebillRequested: false, items: [] },
                     {
-                        id: 2, name: 'Mesa 2 (Centro)', zone: 'Salón Principal', seats: 6, shape: 'RECT', x: 38, y: 36, status: 'OCUPADA', waiter: 'Carlos M.', openedAt: now - (14 * 60000), prebillRequested: false,
+                        id: 2, name: 'Mesa 2 (Centro)', zone: 'Salón Principal', seats: 6, shape: 'RECT', x: 33, y: 26, status: 'OCUPADA', waiter: 'Carlos M.', openedAt: now - (14 * 60000), prebillRequested: false,
                         items: [
                             { uid: 'i101', productId: 'b1', name: 'Cubetazo (6x Cerveza Nacional)', price: 12.00, station: 'BARRA', taxRate: 0.10, seat: 'General', note: 'Bien fría ❄️', status: 'READY', sentAt: now - (12 * 60000) },
                             { uid: 'i102', productId: 'p1', name: 'Picada Mixta Grande', price: 22.00, station: 'COCINA', taxRate: 0.07, seat: 'General', note: 'Salsa aparte', status: 'SENT', sentAt: now - (11 * 60000) },
                             { uid: 'i103', productId: 'f1', name: 'Hamburguesa Doble Angus + Papas', price: 12.50, station: 'COCINA', taxRate: 0.07, seat: 'Silla 1', note: 'Sin cebolla, Término 3/4', status: 'SENT', sentAt: now - (11 * 60000) }
                         ]
                     },
-                    { id: 3, name: 'Mesa 3 (Frente Caja)', zone: 'Salón Principal', seats: 4, shape: 'ROUND', x: 10, y: 55, status: 'LIBRE', waiter: '', openedAt: null, prebillRequested: false, items: [] },
-                    { id: 4, name: 'Mesa 4 (Familiar)', zone: 'Salón Principal', seats: 8, shape: 'RECT', x: 38, y: 66, status: 'LIBRE', waiter: '', openedAt: null, prebillRequested: false, items: [] },
+                    { id: 3, name: 'Mesa 3 (Frente Caja)', zone: 'Salón Principal', seats: 4, shape: 'ROUND', x: 6, y: 46, status: 'LIBRE', waiter: '', openedAt: null, prebillRequested: false, items: [] },
+                    { id: 4, name: 'Mesa 4 (Familiar)', zone: 'Salón Principal', seats: 8, shape: 'RECT', x: 31, y: 50, status: 'LIBRE', waiter: '', openedAt: null, prebillRequested: false, items: [] },
                     {
-                        id: 5, name: 'Terraza 1', zone: 'Terraza Bar', seats: 4, shape: 'ROUND', x: 74, y: 38, status: 'OCUPADA', waiter: 'Ana P.', openedAt: now - (6 * 60000), prebillRequested: false,
+                        id: 5, name: 'Terraza 1', zone: 'Terraza Bar', seats: 4, shape: 'ROUND', x: 68, y: 36, status: 'OCUPADA', waiter: 'Ana P.', openedAt: now - (6 * 60000), prebillRequested: false,
                         items: [
                             { uid: 'i201', productId: 'b3', name: 'Cubetazo Importado (6x Corona)', price: 18.00, station: 'BARRA', taxRate: 0.10, seat: 'Silla 1', note: 'Con limón', status: 'SENT', sentAt: now - (5 * 60000) },
                             { uid: 'i202', productId: 'l2', name: 'Margarita Clásica / Frappé', price: 6.50, station: 'BARRA', taxRate: 0.10, seat: 'Silla 2', note: 'Escarchada con sal', status: 'SENT', sentAt: now - (5 * 60000) },
                             { uid: 'i203', productId: 'p2', name: 'Alitas Crispy BBQ (10 pzs)', price: 11.50, station: 'COCINA', taxRate: 0.07, seat: 'General', note: 'Mitad picante', status: 'PREPARING', sentAt: now - (5 * 60000) }
                         ]
                     },
-                    { id: 6, name: 'Terraza 2', zone: 'Terraza Bar', seats: 6, shape: 'RECT', x: 74, y: 66, status: 'LIBRE', waiter: '', openedAt: null, prebillRequested: false, items: [] },
+                    { id: 6, name: 'Terraza 2', zone: 'Terraza Bar', seats: 6, shape: 'RECT', x: 68, y: 57, status: 'LIBRE', waiter: '', openedAt: null, prebillRequested: false, items: [] },
                     {
-                        id: 9, name: 'VIP Lounge 1', zone: 'Barra / VIP', seats: 8, shape: 'RECT', x: 64, y: 18, status: 'OCUPADA', waiter: 'Luis R.', openedAt: now - (25 * 60000), prebillRequested: true,
+                        id: 9, name: 'VIP Lounge 1', zone: 'Barra / VIP', seats: 8, shape: 'RECT', x: 66, y: 15, status: 'OCUPADA', waiter: 'Luis R.', openedAt: now - (25 * 60000), prebillRequested: true,
                         items: [
                             { uid: 'i301', productId: 'l4', name: 'Botella Whisky 12 Años + Mezcladores', price: 65.00, station: 'BARRA', taxRate: 0.10, seat: 'General', note: 'Con 4 sodas y hielo', status: 'DELIVERED', sentAt: now - (24 * 60000) },
                             { uid: 'i302', productId: 'p1', name: 'Picada Mixta Grande', price: 22.00, station: 'COCINA', taxRate: 0.07, seat: 'General', note: '', status: 'DELIVERED', sentAt: now - (20 * 60000) }
                         ]
                     },
-                    { id: 10, name: 'Para Llevar #1', zone: 'Para Llevar', seats: 2, shape: 'TAKEOUT', x: 24, y: 80, status: 'LIBRE', waiter: '', openedAt: null, prebillRequested: false, deliveryType: 'PARA LLEVAR', customerName: '', customerPhone: '', customerAddress: '', items: [] },
-                    { id: 11, name: 'Delivery #1', zone: 'Para Llevar', seats: 2, shape: 'TAKEOUT', x: 52, y: 80, status: 'LIBRE', waiter: '', openedAt: null, prebillRequested: false, deliveryType: 'DELIVERY', customerName: '', customerPhone: '', customerAddress: '', items: [] }
+                    { id: 10, name: 'Para Llevar #1', zone: 'Para Llevar', seats: 2, shape: 'TAKEOUT', x: 8, y: 85, status: 'LIBRE', waiter: '', openedAt: null, prebillRequested: false, deliveryType: 'PARA LLEVAR', customerName: '', customerPhone: '', customerAddress: '', items: [] },
+                    { id: 11, name: 'Delivery #1', zone: 'Para Llevar', seats: 2, shape: 'TAKEOUT', x: 36, y: 85, status: 'LIBRE', waiter: '', openedAt: null, prebillRequested: false, deliveryType: 'DELIVERY', customerName: '', customerPhone: '', customerAddress: '', items: [] }
                 ]
             };
         }
@@ -2896,19 +2926,32 @@
             }
             if (!state.landmarks) {
                 state.landmarks = [
-                    { id: 'lm_entrada', name: '🚪 ENTRADA PRINCIPAL', x: 42, y: 90, icon: 'fa-door-open', color: 'slate' },
-                    { id: 'lm_caja', name: '💵 CAJA REGISTRADORA', x: 8, y: 84, icon: 'fa-cash-register', color: 'emerald' },
-                    { id: 'lm_barra', name: '🍸 BARRA & COCTELERÍA', x: 74, y: 10, icon: 'fa-martini-glass-citrus', color: 'cyan' },
-                    { id: 'lm_cocina', name: '🔥 PASE DE COCINA', x: 38, y: 5, icon: 'fa-fire-burner', color: 'orange' }
+                    { id: 'lm_entrada', name: '🚪 ENTRADA PRINCIPAL', x: 38, y: 74, icon: 'fa-door-open', color: 'slate' },
+                    { id: 'lm_caja', name: '💵 CAJA REGISTRADORA', x: 5, y: 74, icon: 'fa-cash-register', color: 'emerald' },
+                    { id: 'lm_barra', name: '🍸 BARRA & COCTELERÍA', x: 66, y: 6, icon: 'fa-martini-glass-citrus', color: 'cyan' },
+                    { id: 'lm_cocina', name: '🔥 PASE DE COCINA', x: 24, y: 4, icon: 'fa-fire-burner', color: 'orange' }
                 ];
+            } else {
+                // Reubicar automáticamente Entrada y Caja si estaban en la zona inferior que ahora es exclusiva de Para Llevar / Delivery
+                state.landmarks.forEach(lm => {
+                    if (lm.id === 'lm_entrada' && lm.y >= 82) { lm.x = 38; lm.y = 74; }
+                    if (lm.id === 'lm_caja' && lm.y >= 80) { lm.x = 5; lm.y = 74; }
+                });
             }
             const cols = 4;
+            let takeoutIndex = 0;
             (state.tables || []).forEach((t, idx) => {
                 if (typeof t.x !== 'number' || typeof t.y !== 'number') {
                     const col = idx % cols;
                     const row = Math.floor(idx / cols);
                     t.x = 8 + col * 22;
                     t.y = 16 + row * 24;
+                }
+                // Si es un botón de Para Llevar / Delivery que tenía las coordenadas antiguas pegadas arriba, bajarlo a la nueva franja despejada
+                if ((t.zone === 'Para Llevar' || t.shape === 'TAKEOUT') && t.y < 83) {
+                    t.x = 8 + (takeoutIndex * 28) % 78;
+                    t.y = 85;
+                    takeoutIndex++;
                 }
                 if (!t.seats) t.seats = 4;
                 if (!t.shape) t.shape = 'RECT';
@@ -3317,22 +3360,72 @@
                 gridWrapper.classList.add('hidden');
                 gridWrapper.classList.remove('grid');
                 btnMap.className = 'px-2.5 py-1 rounded-lg text-xs font-black bg-amber-500 text-slate-950 transition-all';
-                btnGrid.className = 'px-2.5 py-1 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-all';
+                btnGrid.className = 'px-2.5 py-1 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-all ml-1';
+                setTimeout(() => applyResponsiveFloorMapScale(), 20);
             } else {
                 mapWrapper.classList.add('hidden');
                 gridWrapper.classList.remove('hidden');
                 gridWrapper.classList.add('grid');
-                btnGrid.className = 'px-2.5 py-1 rounded-lg text-xs font-black bg-amber-500 text-slate-950 transition-all';
+                btnGrid.className = 'px-2.5 py-1 rounded-lg text-xs font-black bg-amber-500 text-slate-950 transition-all ml-1';
                 btnMap.className = 'px-2.5 py-1 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-all';
             }
             renderTablesGrid();
         }
+
+        function applyResponsiveFloorMapScale() {
+            const wrapper = document.getElementById('floor-map-wrapper');
+            const holder = document.getElementById('floor-map-scale-holder');
+            const canvas = document.getElementById('floor-map-canvas');
+            const zoomLabel = document.getElementById('label-mobile-zoom');
+            if (!wrapper || !holder || !canvas) return;
+
+            const baseW = 980;
+            const baseH = 760;
+            const availableW = wrapper.clientWidth || window.innerWidth;
+
+            // En pantallas menores a 980px (teléfonos y tablets verticales), si está en modo Ajustar (o no estamos arrastrando en diseño),
+            // escala todo el plano 2D exactamente con las mismas proporciones que en computadora.
+            if (availableW < baseW && mobileMapFitToScreen && !isTableLayoutEditMode) {
+                const scale = Math.max(0.34, (availableW - 4) / baseW);
+                canvas.style.transform = `scale(${scale})`;
+                canvas.style.transformOrigin = 'top left';
+                holder.style.width = `${Math.floor(baseW * scale)}px`;
+                holder.style.height = `${Math.ceil(baseH * scale)}px`;
+                wrapper.style.overflowX = 'hidden';
+                if (zoomLabel) zoomLabel.textContent = 'Ampliar 100%';
+            } else {
+                canvas.style.transform = 'scale(1)';
+                canvas.style.transformOrigin = 'top left';
+                holder.style.width = `${baseW}px`;
+                holder.style.height = `${baseH}px`;
+                wrapper.style.overflowX = 'auto';
+                if (zoomLabel) zoomLabel.textContent = 'Ajustar Pantalla';
+            }
+        }
+
+        function toggleMobileMapZoom() {
+            mobileMapFitToScreen = !mobileMapFitToScreen;
+            applyResponsiveFloorMapScale();
+            showToast(
+                mobileMapFitToScreen
+                    ? '📱 Plano completo ajustado a la pantalla del teléfono.'
+                    : '🔍 Plano al 100%: Desliza hacia los lados para recorrer el restaurante.',
+                'info'
+            );
+        }
+
+        window.addEventListener('resize', () => {
+            if (floorViewMode === 'MAPA') {
+                applyResponsiveFloorMapScale();
+            }
+        });
 
         function toggleTableLayoutEditMode() {
             isTableLayoutEditMode = !isTableLayoutEditMode;
             if (isTableLayoutEditMode && floorViewMode !== 'MAPA') {
                 setFloorViewMode('MAPA');
             }
+            applyResponsiveFloorMapScale();
             const banner = document.getElementById('layout-edit-banner');
             const btn = document.getElementById('btn-toggle-layout-mode');
             const label = document.getElementById('label-layout-mode');
@@ -3552,6 +3645,29 @@
             return { topHtml, bottomHtml };
         }
 
+        function getTableSpatialHint(table) {
+            const x = typeof table.x === 'number' ? table.x : 50;
+            const y = typeof table.y === 'number' ? table.y : 50;
+            const vPos = y < 32 ? 'Frente / Adelante' : (y > 62 ? 'Fondo / Atrás' : 'Centro');
+            const hPos = x < 28 ? 'Izquierda' : (x > 62 ? 'Derecha' : 'Centro');
+            if (vPos === 'Centro' && hPos === 'Centro') return 'Ubicación: Centro del Salón';
+            return `Ubicación: ${vPos} • ${hPos}`;
+        }
+
+        function sortTablesByFloorOrder(tablesList) {
+            // Ordena exactamente como están ubicadas en el plano físico (de arriba hacia abajo por filas, y de izquierda a derecha)
+            return [...tablesList].sort((a, b) => {
+                const ay = typeof a.y === 'number' ? a.y : 50;
+                const by = typeof b.y === 'number' ? b.y : 50;
+                const ax = typeof a.x === 'number' ? a.x : 50;
+                const bx = typeof b.x === 'number' ? b.x : 50;
+                const rowBandA = Math.round(ay / 14);
+                const rowBandB = Math.round(by / 14);
+                if (rowBandA !== rowBandB) return rowBandA - rowBandB;
+                return ax - bx;
+            });
+        }
+
         /***********************************************************************
          * 6. RENDERIZADO DE PLANO 2D, MAPA DE MESAS Y TARJETAS DE DESPACHO
          ***********************************************************************/
@@ -3641,8 +3757,32 @@
                 navBadgeReady.classList.add('hidden');
             }
 
-            // 1. RENDER INTERACTIVE 2D FLOOR MAP
+            // 1. RENDER INTERACTIVE 2D FLOOR MAP (CON ZONAS DEMARCADAS VISUALMENTE TANTO EN TELÉFONO COMO EN PC/TABLET)
             if (floorCanvas) {
+                const zoneRegionsBackdropHtml = `
+                    <!-- Demarcación Visual de Zonas del Restaurante en el Plano 2D -->
+                    <div class="pointer-events-none absolute left-[2%] top-[10%] w-[58%] h-[61%] rounded-3xl border-2 border-dashed border-amber-500/25 bg-amber-500/[0.03] p-3 flex items-start justify-between">
+                        <span class="px-2.5 py-1 rounded-xl bg-slate-900/90 border border-amber-500/30 text-[11px] font-black uppercase tracking-wider text-amber-400">
+                            <i class="fa-solid fa-utensils mr-1"></i> Zona: Salón Principal
+                        </span>
+                    </div>
+                    <div class="pointer-events-none absolute left-[62%] top-[3%] w-[36%] h-[27%] rounded-3xl border-2 border-dashed border-purple-500/30 bg-purple-500/[0.04] p-3 flex items-start justify-between">
+                        <span class="px-2.5 py-1 rounded-xl bg-slate-900/90 border border-purple-500/30 text-[11px] font-black uppercase tracking-wider text-purple-300">
+                            <i class="fa-solid fa-crown mr-1"></i> Zona: Barra / VIP
+                        </span>
+                    </div>
+                    <div class="pointer-events-none absolute left-[62%] top-[32%] w-[36%] h-[46%] rounded-3xl border-2 border-dashed border-cyan-500/30 bg-cyan-500/[0.03] p-3 flex items-start justify-between">
+                        <span class="px-2.5 py-1 rounded-xl bg-slate-900/90 border border-cyan-500/30 text-[11px] font-black uppercase tracking-wider text-cyan-300">
+                            <i class="fa-solid fa-umbrella-beach mr-1"></i> Zona: Terraza Bar
+                        </span>
+                    </div>
+                    <div class="pointer-events-none absolute left-[2%] top-[81%] w-[96%] h-[17.5%] rounded-3xl border-2 border-dashed border-emerald-500/35 bg-emerald-500/[0.04] p-2.5 flex items-start justify-between">
+                        <span class="px-2.5 py-0.5 rounded-xl bg-slate-900/95 border border-emerald-500/40 text-[10px] font-black uppercase tracking-wider text-emerald-300">
+                            <i class="fa-solid fa-motorcycle mr-1"></i> Franja Exclusiva: Para Llevar y Delivery (Despejada)
+                        </span>
+                    </div>
+                `;
+
                 const landmarksHtml = (appState.landmarks || []).map(lm => `
                     <div id="floor-node-LANDMARK-${lm.id}"
                          onmousedown="startDraggingFloorItem('LANDMARK', '${lm.id}', event)"
@@ -3670,12 +3810,12 @@
                     const isRound = table.shape === 'ROUND' && !isTakeoutZone;
                     const chairs = buildChairsVisualHTML(seats, isOccupied, hasReady);
 
-                    // Width scales with chair capacity or wide card for Takeout/Delivery
-                    let widthClass = 'w-[165px]';
-                    if (isTakeoutZone) widthClass = 'w-[245px]';
-                    else if (seats >= 8) widthClass = 'w-[225px]';
-                    else if (seats >= 6) widthClass = 'w-[195px]';
-                    else if (seats <= 2) widthClass = 'w-[140px]';
+                    // Width scales with chair capacity or compact clean card for Takeout/Delivery so it never overlaps
+                    let widthClass = 'w-[162px]';
+                    if (isTakeoutZone) widthClass = 'w-[195px]';
+                    else if (seats >= 8) widthClass = 'w-[215px]';
+                    else if (seats >= 6) widthClass = 'w-[188px]';
+                    else if (seats <= 2) widthClass = 'w-[138px]';
 
                     let surfaceClass = 'bg-slate-900/95 border-2 border-slate-700 hover:border-emerald-400';
                     let statusTag = isTakeoutZone
@@ -3702,7 +3842,7 @@
                         surfaceClass = 'bg-slate-900 border-2 border-dashed border-amber-400 cursor-move shadow-2xl';
                     }
 
-                    const shapeRadius = isRound ? 'rounded-full px-4 py-3' : 'rounded-2xl p-3';
+                    const shapeRadius = isRound ? 'rounded-full px-4 py-3' : (isTakeoutZone ? 'rounded-2xl p-2.5' : 'rounded-2xl p-3');
 
                     return `
                         <div id="floor-node-TABLE-${table.id}"
@@ -3720,7 +3860,7 @@
                             `}
 
                             <!-- Table / Takeout Surface -->
-                            <div class="w-full ${surfaceClass} ${shapeRadius} shadow-xl transition-all flex flex-col justify-between ${isTakeoutZone ? 'min-h-[116px]' : 'min-h-[92px]'}">
+                            <div class="w-full ${surfaceClass} ${shapeRadius} shadow-xl transition-all flex flex-col justify-between ${isTakeoutZone ? 'min-h-[82px]' : 'min-h-[90px]'}">
                                 ${isTableLayoutEditMode ? `
                                     <div class="space-y-1.5 text-center">
                                         <input type="text" value="${table.name}" onchange="updateTableNameInline(${table.id}, this.value, event)" class="w-full bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-[11px] font-black text-white text-center">
@@ -3740,30 +3880,40 @@
                                     </div>
                                 ` : `
                                     <div class="flex items-center justify-between gap-1">
-                                        <span class="font-black ${isTakeoutZone ? 'text-sm text-emerald-300' : 'text-xs text-white'} truncate">${table.name}</span>
+                                        <span class="font-black ${isTakeoutZone ? 'text-xs text-emerald-300' : 'text-xs text-white'} truncate">${table.name}</span>
                                         ${statusTag}
                                     </div>
                                     ${isTakeoutZone ? `
-                                        <div class="my-1.5">
+                                        <div class="my-1">
                                             ${table.customerName ? `
-                                                <p class="text-xs font-extrabold text-white truncate"><i class="fa-solid fa-user text-amber-400 mr-1"></i>${table.customerName}</p>
-                                                ${table.customerPhone ? `<p class="text-[11px] font-mono text-emerald-300 truncate"><i class="fa-brands fa-whatsapp mr-1"></i>${table.customerPhone}</p>` : ''}
+                                                <p class="text-[11px] font-extrabold text-white truncate"><i class="fa-solid fa-user text-amber-400 mr-1"></i>${table.customerName}</p>
+                                                ${table.customerPhone ? `<p class="text-[10px] font-mono text-emerald-300 truncate"><i class="fa-brands fa-whatsapp mr-1"></i>${table.customerPhone}</p>` : ''}
                                             ` : `
-                                                <div class="mt-1 py-1.5 px-2.5 rounded-xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 font-black text-xs flex items-center justify-center gap-1.5 group-hover:bg-emerald-500 group-hover:text-slate-950 transition-colors">
-                                                    <i class="fa-solid fa-hand-pointer"></i>
-                                                    <span>TOCAR PARA PEDIR</span>
+                                                <div class="mt-1 py-1 px-2 rounded-lg bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 font-black text-[10px] flex items-center justify-center gap-1 group-hover:bg-emerald-500 group-hover:text-slate-950 transition-colors">
+                                                    <i class="fa-solid fa-plus"></i>
+                                                    <span>PEDIR LLEVAR / DELIVERY</span>
                                                 </div>
                                             `}
                                         </div>
                                     ` : `
-                                        <div class="my-1 text-[10px] text-slate-400 flex items-center justify-between">
-                                            <span><i class="fa-solid fa-chair text-amber-400/80 mr-1"></i>${seats} pers.</span>
-                                            <span class="truncate max-w-[80px]">${isOccupied ? (table.waiter || activeWaiter) : 'Libre'}</span>
+                                        <div class="my-1 text-[10px] text-slate-300 flex items-center justify-between">
+                                            <span><i class="fa-solid fa-chair text-amber-400 mr-1"></i>${seats} pers.</span>
+                                            <span class="truncate max-w-[85px] font-semibold">${isOccupied ? (table.waiter || activeWaiter) : 'Libre'}</span>
                                         </div>
                                     `}
                                     ${hasReady ? `
                                         <div class="text-[10px] font-black text-emerald-300 bg-slate-950/90 px-2 py-0.5 rounded border border-emerald-400/40 truncate">
                                             🔔 ${readyItems[0].name}
+                                        </div>
+                                    ` : ''}
+                                    ${isOccupied ? `
+                                        <div class="mt-1.5 pt-1 border-t border-slate-800/90 grid grid-cols-2 gap-1">
+                                            <button onclick="event.stopPropagation(); openComanderoModal(${table.id});" class="py-1 px-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 font-black text-[10px] flex items-center justify-center gap-1 border border-slate-700">
+                                                <i class="fa-solid fa-utensils"></i> Pedido
+                                            </button>
+                                            <button onclick="event.stopPropagation(); openWaiterCollectModalForTable(${table.id});" class="py-1 px-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-[10px] flex items-center justify-center gap-1 shadow">
+                                                <i class="fa-solid fa-hand-holding-dollar"></i> Cobrar
+                                            </button>
                                         </div>
                                     ` : ''}
                                 `}
@@ -3779,82 +3929,134 @@
                     `;
                 }).join('');
 
-                floorCanvas.innerHTML = landmarksHtml + tablesMapHtml;
+                floorCanvas.innerHTML = zoneRegionsBackdropHtml + landmarksHtml + tablesMapHtml;
+                applyResponsiveFloorMapScale();
             }
 
-            // 2. RENDER CLASSIC GRID VIEW (BACKUP / COMPACT MODE)
-            grid.innerHTML = filtered.map((table) => {
-                const isOccupied = table.items.length > 0;
-                const readyItems = table.items.filter(i => i.status === 'READY');
-                const hasReady = readyItems.length > 0;
-                const totals = calculateTableTotals(table);
-                const mins = getElapsedMinutes(table.openedAt);
-                const isTakeoutZone = table.zone === 'Para Llevar' || table.shape === 'TAKEOUT';
+            // 2. RENDER MOBILE / SECTION VIEW ORDERED EXACTLY BY RESTAURANT FLOOR LAYOUT & ZONES
+            const zonesOrder = ['Salón Principal', 'Terraza Bar', 'Barra / VIP', 'Para Llevar'];
+            const activeZones = selectedZone === 'TODAS'
+                ? zonesOrder
+                : [selectedZone];
 
-                let cardStyle = isTakeoutZone
-                    ? 'bg-gradient-to-br from-emerald-950/80 via-slate-900 to-slate-900 border-2 border-emerald-500/60 hover:border-emerald-400 col-span-2'
-                    : 'bg-slate-900/90 border-slate-800 hover:border-emerald-500/50';
-                let badgeHtml = isTakeoutZone
-                    ? `<span class="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">${table.deliveryType === 'DELIVERY' ? '🛵 DELIVERY' : '🛍️ PARA LLEVAR'}</span>`
-                    : `<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">${table.seats || 4} SILLAS • LIBRE</span>`;
+            const sectionsHtml = activeZones.map(zoneName => {
+                const zoneTables = sortTablesByFloorOrder(
+                    filtered.filter(t => !t.isSpacer && t.zone === zoneName)
+                );
+                if (zoneTables.length === 0) return '';
 
-                if (table.pendingCashierApproval) {
-                    cardStyle = `bg-gradient-to-b from-amber-950/90 to-slate-900 border-2 border-amber-400 new-order-flash ${isTakeoutZone ? 'col-span-2' : ''}`;
-                    badgeHtml = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-400 text-slate-950">⏳ ENTREGAR A CAJA ($${totals.totalWithTax.toFixed(2)})</span>`;
-                } else if (hasReady) {
-                    cardStyle = `bg-gradient-to-b from-emerald-950/90 to-slate-900 border-2 border-emerald-400 ready-glow ${isTakeoutZone ? 'col-span-2' : ''}`;
-                    badgeHtml = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-400 text-slate-950 animate-pulse">¡ENTREGAR (${readyItems.length})!</span>`;
-                } else if (isOccupied) {
-                    cardStyle = `bg-slate-900 border-2 border-amber-500/70 hover:border-amber-400 ${isTakeoutZone ? 'col-span-2' : ''}`;
-                    badgeHtml = `<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/40">OCUPADA</span>`;
-                }
+                let zoneIcon = 'fa-utensils text-amber-400';
+                if (zoneName === 'Terraza Bar') zoneIcon = 'fa-umbrella-beach text-cyan-400';
+                else if (zoneName === 'Barra / VIP') zoneIcon = 'fa-crown text-purple-400';
+                else if (zoneName === 'Para Llevar') zoneIcon = 'fa-motorcycle text-emerald-400';
+
+                const cardsHtml = zoneTables.map((table, orderIdx) => {
+                    const isOccupied = table.items.length > 0;
+                    const readyItems = table.items.filter(i => i.status === 'READY');
+                    const hasReady = readyItems.length > 0;
+                    const totals = calculateTableTotals(table);
+                    const mins = getElapsedMinutes(table.openedAt);
+                    const isTakeoutZone = table.zone === 'Para Llevar' || table.shape === 'TAKEOUT';
+                    const spatialHint = getTableSpatialHint(table);
+
+                    let cardStyle = isTakeoutZone
+                        ? 'bg-gradient-to-br from-emerald-950/80 via-slate-900 to-slate-900 border-2 border-emerald-500/60 hover:border-emerald-400'
+                        : 'bg-slate-900/95 border-2 border-slate-800 hover:border-emerald-500/50';
+                    let badgeHtml = isTakeoutZone
+                        ? `<span class="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">${table.deliveryType === 'DELIVERY' ? '🛵 DELIVERY' : '🛍️ PARA LLEVAR'}</span>`
+                        : `<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">${table.seats || 4} SILLAS • LIBRE</span>`;
+
+                    if (table.pendingCashierApproval) {
+                        cardStyle = 'bg-gradient-to-b from-amber-950/90 to-slate-900 border-2 border-amber-400 new-order-flash';
+                        badgeHtml = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-400 text-slate-950">⏳ ENTREGAR A CAJA ($${totals.totalWithTax.toFixed(2)})</span>`;
+                    } else if (hasReady) {
+                        cardStyle = 'bg-gradient-to-b from-emerald-950/90 to-slate-900 border-2 border-emerald-400 ready-glow';
+                        badgeHtml = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-400 text-slate-950 animate-pulse">¡ENTREGAR (${readyItems.length})!</span>`;
+                    } else if (isOccupied) {
+                        cardStyle = 'bg-slate-900 border-2 border-amber-500/80 hover:border-amber-400';
+                        badgeHtml = `<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500 text-slate-950">OCUPADA • $${totals.totalWithTax.toFixed(2)}</span>`;
+                    }
+
+                    return `
+                        <div onclick="openComanderoModal(${table.id})" class="rounded-2xl p-3.5 transition-all cursor-pointer flex flex-col justify-between min-h-[175px] shadow-lg ${cardStyle}">
+                            <div>
+                                <div class="flex items-center justify-between gap-1">
+                                    <span class="text-[10px] font-mono font-black px-2 py-0.5 rounded bg-slate-950 text-slate-300 border border-slate-700">#${orderIdx + 1} en ${table.zone}</span>
+                                    ${badgeHtml}
+                                </div>
+                                <h3 class="font-black text-white text-base sm:text-lg mt-1.5 leading-snug">${table.name}</h3>
+                                <p class="text-[11px] font-semibold text-amber-400/90 flex items-center gap-1 mt-0.5">
+                                    <i class="fa-solid fa-location-dot text-[10px]"></i>
+                                    <span>${spatialHint}</span>
+                                </p>
+                                ${table.customerName ? `
+                                    <div class="mt-2 p-2 rounded-xl bg-slate-950/90 border border-slate-800 text-xs">
+                                        <p class="font-bold text-white"><i class="fa-solid fa-user text-emerald-400 mr-1"></i>${table.customerName}</p>
+                                        ${table.customerPhone ? `<p class="font-mono text-emerald-300 text-[11px]"><i class="fa-brands fa-whatsapp mr-1"></i>${table.customerPhone}</p>` : ''}
+                                    </div>
+                                ` : ''}
+                            </div>
+
+                            ${isOccupied ? `
+                                <div class="mt-3 pt-2.5 border-t border-slate-800 space-y-2">
+                                    <div class="flex items-center justify-between text-xs">
+                                        <span class="text-slate-300 font-semibold"><i class="fa-solid fa-user-tie text-amber-400 mr-1"></i>${table.waiter || activeWaiter} (${mins}m)</span>
+                                        <span class="font-mono font-black text-base text-emerald-400">$${totals.totalWithTax.toFixed(2)}</span>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-1.5">
+                                        <button onclick="event.stopPropagation(); openComanderoModal(${table.id});" class="py-2 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-[11px] flex items-center justify-center gap-1 border border-slate-700">
+                                            <i class="fa-solid fa-plus text-amber-400"></i> Pedido (${table.items.length})
+                                        </button>
+                                        <button onclick="event.stopPropagation(); openWaiterCollectModalForTable(${table.id});" class="py-2 px-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-[11px] flex items-center justify-center gap-1 shadow">
+                                            <i class="fa-solid fa-hand-holding-dollar"></i> Cobrar
+                                        </button>
+                                    </div>
+                                </div>
+                            ` : `
+                                <div class="pt-3 flex items-center justify-between">
+                                    <span class="w-full py-2 px-3 rounded-xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 font-black text-xs flex items-center justify-center gap-2">
+                                        <i class="fa-solid fa-hand-pointer"></i> TOCAR PARA ABRIR MESA
+                                    </span>
+                                </div>
+                            `}
+                        </div>
+                    `;
+                }).join('');
 
                 return `
-                    <div onclick="openComanderoModal(${table.id})" class="rounded-2xl p-4 transition-all cursor-pointer flex flex-col justify-between min-h-[165px] shadow-lg ${cardStyle}">
-                        <div>
-                            <div class="flex items-center justify-between gap-1">
-                                <h3 class="font-black text-white ${isTakeoutZone ? 'text-lg' : 'text-base'} truncate">${table.name}</h3>
-                                ${badgeHtml}
+                    <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-3.5 space-y-3">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid ${zoneIcon} text-sm"></i>
+                                <h4 class="font-black text-white text-sm sm:text-base uppercase tracking-wide">Sección: ${zoneName}</h4>
                             </div>
-                            <p class="text-[11px] font-semibold text-amber-400/90 mt-0.5">${table.zone}</p>
-                            ${table.customerName ? `
-                                <div class="mt-2 p-2 rounded-xl bg-slate-950/90 border border-slate-800 text-xs">
-                                    <p class="font-bold text-white"><i class="fa-solid fa-user text-emerald-400 mr-1"></i>${table.customerName}</p>
-                                    ${table.customerPhone ? `<p class="font-mono text-emerald-300 text-[11px]"><i class="fa-brands fa-whatsapp mr-1"></i>${table.customerPhone}</p>` : ''}
-                                </div>
-                            ` : ''}
+                            <span class="text-[11px] text-slate-400 font-semibold">${zoneTables.length} mesa(s) en el orden del plano</span>
                         </div>
-                        ${isOccupied ? `
-                            <div class="pt-2 border-t border-slate-800/80 flex items-baseline justify-between">
-                                <span class="text-[10px] text-slate-400">${table.items.length} ítems (${mins}m)</span>
-                                <span class="font-mono font-black text-base text-amber-400">$${totals.totalWithTax.toFixed(2)}</span>
-                            </div>
-                        ` : `
-                            <div class="pt-3 flex items-center justify-between">
-                                <span class="w-full py-2 px-3 rounded-xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 font-black text-xs flex items-center justify-center gap-2">
-                                    <i class="fa-solid fa-hand-pointer"></i> TOCAR PARA INICIAR PEDIDO
-                                </span>
-                            </div>
-                        `}
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                            ${cardsHtml}
+                        </div>
                     </div>
                 `;
             }).join('');
+
+            grid.innerHTML = sectionsHtml || `<div class="p-8 text-center text-slate-500 text-xs">No hay mesas en esta sección.</div>`;
         }
 
         function createNewTakeoutOrDeliveryOrder() {
             // Find an available empty Para Llevar / Delivery slot or create a new one immediately
             let freeTakeout = appState.tables.find(t => !t.isSpacer && t.zone === 'Para Llevar' && t.items.length === 0 && !t.customerName);
             if (!freeTakeout) {
-                const countTakeout = appState.tables.filter(t => t.zone === 'Para Llevar').length + 1;
+                const existingTakeouts = appState.tables.filter(t => t.zone === 'Para Llevar').length;
+                const countTakeout = existingTakeouts + 1;
                 const nextId = Math.max(0, ...appState.tables.map(t => t.id)) + 1;
                 freeTakeout = {
                     id: nextId,
-                    name: `Pedido Llevar/Delivery #${countTakeout}`,
+                    name: `Llevar/Delivery #${countTakeout}`,
                     zone: 'Para Llevar',
                     seats: 2,
                     shape: 'TAKEOUT',
-                    x: Math.min(72, 18 + ((countTakeout * 18) % 60)),
-                    y: 78,
+                    x: 8 + ((existingTakeouts * 24) % 72),
+                    y: 85,
                     status: 'LIBRE',
                     waiter: activeWaiter,
                     openedAt: null,
@@ -4388,32 +4590,99 @@
         function openQuickWaiterCollectPicker() {
             const occupied = (appState.tables || []).filter(t => !t.isSpacer && t.items && t.items.length > 0);
             if (occupied.length === 0) {
-                showToast('No hay mesas con cuenta abierta en este momento.', 'warning');
+                showToast('No hay mesas con cuenta abierta para cobrar en este momento.', 'warning');
                 return;
             }
-            const myTable = occupied.find(t => t.waiter === activeWaiter) || occupied[0];
-            activeTableId = myTable.id;
+            // Priorizar la mesa que el salonero ya tiene abierta en pantalla, o una asignada a él
+            let chosenTable = occupied.find(t => t.id === activeTableId)
+                || occupied.find(t => t.waiter === activeWaiter && !t.pendingCashierApproval)
+                || occupied.find(t => !t.pendingCashierApproval)
+                || occupied[0];
+
+            openWaiterCollectModalForTable(chosenTable.id);
+        }
+
+        function openWaiterCollectModalForTable(tableId) {
+            activeTableId = Number(tableId);
             openWaiterCollectModal();
         }
 
+        function switchWaiterCollectTable(newTableId) {
+            activeTableId = Number(newTableId);
+            populateWaiterCollectModalData();
+        }
+
         function openWaiterCollectModal() {
-            const table = appState.tables.find(t => t.id === activeTableId);
-            if (!table || table.items.length === 0) {
-                showToast('Esta mesa no tiene productos cargados para cobrar.', 'warning');
-                return;
+            let table = appState.tables.find(t => t.id === activeTableId);
+            if (!table || !table.items || table.items.length === 0) {
+                const occupied = (appState.tables || []).filter(t => !t.isSpacer && t.items && t.items.length > 0);
+                if (occupied.length === 0) {
+                    showToast('No hay ninguna mesa con productos cargados para cobrar.', 'warning');
+                    return;
+                }
+                table = occupied.find(t => t.waiter === activeWaiter) || occupied[0];
+                activeTableId = table.id;
             }
+
+            // Si había productos agregados sin enviar a cocina, se marcan como enviados automáticamente para permitir el cobro directo sin bloquear al salonero
             const unsent = table.items.filter(i => i.status === 'NEW');
             if (unsent.length > 0) {
-                showToast('Primero debes marchar los productos nuevos a Cocina/Barra antes de cobrar.', 'warning');
-                return;
+                const now = Date.now();
+                unsent.forEach(item => {
+                    item.status = 'SENT';
+                    item.sentAt = now;
+                });
+                showToast(`${unsent.length} producto(s) en borrador fueron confirmados para proceder al cobro.`, 'info');
             }
 
             waiterCollectTipPct = 10;
-            document.getElementById('wcol-table-title').textContent = `Cobro de ${table.name} (${table.waiter || activeWaiter})`;
-            document.getElementById('wcol-input-ref').value = '';
-            setWaiterCollectTip(10);
-            fillWaiterCollectMethod('CASH');
+            populateWaiterCollectModalData();
             document.getElementById('modal-waiter-collect').classList.remove('hidden');
+        }
+
+        function populateWaiterCollectModalData() {
+            const table = appState.tables.find(t => t.id === activeTableId);
+            if (!table) return;
+
+            const occupied = (appState.tables || []).filter(t => !t.isSpacer && t.items && t.items.length > 0);
+            const selectorEl = document.getElementById('wcol-table-selector');
+            if (selectorEl) {
+                selectorEl.innerHTML = occupied.map(t => {
+                    const tot = calculateTableTotals(t).totalWithTax;
+                    return `<option value="${t.id}" ${t.id === table.id ? 'selected' : ''}>📍 ${t.name} (${t.zone}) — ${t.items.length} ítems — Total c/ITBMS: $${tot.toFixed(2)} — Mesero: ${t.waiter || activeWaiter}</option>`;
+                }).join('');
+            }
+
+            document.getElementById('wcol-table-title').textContent = `Cobrar ${table.name} (${table.zone})`;
+            const waiterBadge = document.getElementById('wcol-waiter-badge');
+            if (waiterBadge) {
+                waiterBadge.textContent = `Atiende: ${table.waiter || activeWaiter}`;
+            }
+
+            // Renderizar el desglose exacto de productos que el salonero está cobrando
+            const breakdownEl = document.getElementById('wcol-items-breakdown');
+            if (breakdownEl) {
+                breakdownEl.innerHTML = table.items.map((item, idx) => `
+                    <div class="py-1.5 flex items-center justify-between gap-2 text-xs">
+                        <div class="min-w-0">
+                            <span class="font-mono text-slate-400 mr-1">${idx + 1}.</span>
+                            <span class="font-bold text-white">${item.name}</span>
+                            <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-amber-300 ml-1">${item.seat || 'General'}</span>
+                        </div>
+                        <span class="font-mono font-bold text-emerald-400 shrink-0">$${item.price.toFixed(2)}</span>
+                    </div>
+                `).join('');
+            }
+
+            document.getElementById('wcol-input-ref').value = '';
+            setWaiterCollectTip(waiterCollectTipPct);
+            fillWaiterCollectMethod('CASH');
+        }
+
+        function previewPrebillFromWaiterCollect() {
+            const table = appState.tables.find(t => t.id === activeTableId);
+            if (!table) return;
+            generateThermalReceipt(table, 'PRECUENTA DETALLADA');
         }
 
         function closeWaiterCollectModal() {
@@ -6075,67 +6344,143 @@
                 };
             })();
 
-            const dateStr = new Date().toLocaleString('es-PA');
+            const nowObj = new Date();
+            const dateStr = nowObj.toLocaleDateString('es-PA', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const timeStr = nowObj.toLocaleTimeString('es-PA', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const docNumber = docType.includes('FACTURA')
+                ? `FAC-00${105 + (appState.metrics.ordersPaid || 1)}`
+                : `PRE-M${table.id}-${nowObj.getHours()}${nowObj.getMinutes()}`;
+
+            // Agrupar productos idénticos para mostrar Cant x Precio Unitario = Total Línea y además silla/notas
+            let tax7Total = 0;
+            let tax10Total = 0;
+            (calc.items || []).forEach(it => {
+                const rate = it.taxRate || 0.07;
+                if (rate >= 0.095) tax10Total += it.price * rate;
+                else tax7Total += it.price * rate;
+            });
+
             const area = document.getElementById('thermal-print-area');
 
             area.innerHTML = `
-                <div class="text-center border-b border-dashed border-black pb-2 mb-2">
-                    <h2 class="font-bold text-sm">RESTOBAR POS PRO</h2>
-                    <p class="text-[10px]">RUC: 155698412-2-2026 DV 45</p>
-                    <p class="text-[10px]">Fecha: ${dateStr}</p>
-                    <p class="font-bold text-xs mt-1">*** ${docType} ***</p>
-                    <p class="text-[11px]">${table.name} (${table.zone})</p>
-                    ${table.customerName ? `<p class="text-[11px] font-bold">Cliente: ${table.customerName}</p>` : ''}
-                    ${table.customerPhone ? `<p class="text-[11px] font-bold">Tel/WhatsApp: ${table.customerPhone}</p>` : ''}
-                    ${table.customerAddress ? `<p class="text-[10px]">Dirección: ${table.customerAddress}</p>` : ''}
-                    <p class="text-[10px]">Atendido por: ${table.waiter || activeWaiter}</p>
+                <div class="text-center border-b-2 border-dashed border-black pb-2 mb-2">
+                    <h2 class="font-black text-base tracking-tight">RESTOBAR POS PRO S.A.</h2>
+                    <p class="text-[10px] font-bold">Sucursal Principal • David, Chiriquí, Panamá</p>
+                    <p class="text-[10px]">RUC: 155698412-2-2026 • DV: 45</p>
+                    <p class="text-[10px]">Tel: (+507) 774-0000 / WhatsApp: 6000-0000</p>
+                    <div class="mt-1.5 py-1 bg-black text-white font-bold text-xs uppercase">
+                        *** ${docType} ***
+                    </div>
                 </div>
 
-                <div class="border-b border-dashed border-black pb-2 mb-2 space-y-1">
-                    ${calc.items.map(i => `
-                        <div class="flex justify-between text-[11px]">
-                            <span>1x ${i.name.substring(0, 22)}</span>
-                            <span>$${i.price.toFixed(2)}</span>
+                <!-- Metadatos Completos de la Orden y Mesa -->
+                <div class="border-b border-dashed border-black pb-2 mb-2 text-[10px] space-y-0.5">
+                    <div class="flex justify-between"><span><strong>N° DOCUMENTO:</strong></span><span class="font-bold">${docNumber}</span></div>
+                    <div class="flex justify-between"><span><strong>FECHA:</strong> ${dateStr}</span><span><strong>HORA:</strong> ${timeStr}</span></div>
+                    <div class="flex justify-between"><span><strong>MESA / CUENTA:</strong></span><span class="font-bold">${table.name.toUpperCase()}</span></div>
+                    <div class="flex justify-between"><span><strong>SECCIÓN / ZONA:</strong></span><span>${table.zone}</span></div>
+                    <div class="flex justify-between"><span><strong>CAPACIDAD MESA:</strong></span><span>${table.seats || 4} Sillas</span></div>
+                    <div class="flex justify-between"><span><strong>SALONERO ATENDIÓ:</strong></span><span class="font-bold">${table.waiter || activeWaiter}</span></div>
+                    <div class="flex justify-between"><span><strong>OPERADOR EMISOR:</strong></span><span>${activeWaiter}</span></div>
+                    ${table.customerName ? `<div class="flex justify-between"><span><strong>CLIENTE:</strong></span><span class="font-bold">${table.customerName}</span></div>` : ''}
+                    ${table.customerPhone ? `<div class="flex justify-between"><span><strong>TEL / WHATSAPP:</strong></span><span>${table.customerPhone}</span></div>` : ''}
+                    ${table.customerAddress ? `<div><strong>DIRECCIÓN ENTREGA:</strong> ${table.customerAddress}</div>` : ''}
+                </div>
+
+                <!-- Encabezado de Tabla de Productos -->
+                <div class="border-b border-black pb-1 mb-1.5 flex justify-between text-[10px] font-bold">
+                    <span>CANT  DESCRIPCIÓN (SILLA / NOTA)</span>
+                    <span>IMPORTE</span>
+                </div>
+
+                <!-- Lista Detallada de Productos -->
+                <div class="border-b-2 border-dashed border-black pb-2 mb-2 space-y-1.5">
+                    ${calc.items.map((i, idx) => `
+                        <div class="text-[11px] leading-tight">
+                            <div class="flex justify-between font-bold">
+                                <span>1x ${i.name}</span>
+                                <span>$${i.price.toFixed(2)}</span>
+                            </div>
+                            <div class="text-[9px] text-gray-700 flex justify-between">
+                                <span>   ↳ Comensal: ${i.seat || 'General'} • Estación: ${i.station || 'COCINA'}</span>
+                                <span>ITBMS ${Math.round((i.taxRate || 0.07) * 100)}%</span>
+                            </div>
+                            ${i.note ? `<div class="text-[9px] italic">   * Nota: ${i.note}</div>` : ''}
                         </div>
                     `).join('')}
-                </div>
-
-                <div class="space-y-1 text-[11px] border-b border-dashed border-black pb-2 mb-2">
-                    <div class="flex justify-between"><span>SUBTOTAL:</span><span>$${calc.subtotal.toFixed(2)}</span></div>
-                    <div class="flex justify-between"><span>ITBMS (7%/10%):</span><span>$${calc.tax.toFixed(2)}</span></div>
-                    <div class="flex justify-between"><span>PROPINA SUGERIDA:</span><span>$${calc.tip.toFixed(2)}</span></div>
-                    <div class="flex justify-between font-bold text-sm pt-1"><span>TOTAL:</span><span>$${calc.grandTotal.toFixed(2)}</span></div>
-                </div>
-
-                ${docType === 'FACTURA DE PAGO' ? `
-                    <div class="text-[10px] space-y-0.5 border-b border-dashed border-black pb-2 mb-2">
-                        <div class="flex justify-between"><span>MÉTODO:</span><span>${calc.methods}</span></div>
-                        <div class="flex justify-between"><span>RECIBIDO:</span><span>$${calc.tendered.toFixed(2)}</span></div>
-                        <div class="flex justify-between font-bold"><span>CAMBIO:</span><span>$${calc.change.toFixed(2)}</span></div>
+                    <div class="pt-1 border-t border-dotted border-black text-[10px] flex justify-between font-bold">
+                        <span>TOTAL UNIDADES / PLATOS SERVIDOS:</span>
+                        <span>${calc.items.length} ítem(s)</span>
                     </div>
-                ` : ''}
+                </div>
 
-                <div class="text-center text-[10px] pt-1">
-                    <p>¡Gracias por su visita!</p>
-                    <p>Documento no fiscal - Control Interno</p>
+                <!-- Desglose Fiscal y Financiero Completo -->
+                <div class="space-y-1 text-[11px] border-b-2 border-dashed border-black pb-2 mb-2">
+                    <div class="flex justify-between"><span>SUBTOTAL CONSUMO NETO:</span><span>$${calc.subtotal.toFixed(2)}</span></div>
+                    <div class="flex justify-between text-[10px]"><span>  • ITBMS 7% (Alimentos/Cocina):</span><span>$${tax7Total.toFixed(2)}</span></div>
+                    <div class="flex justify-between text-[10px]"><span>  • ITBMS 10% (Licores/Cervezas):</span><span>$${tax10Total.toFixed(2)}</span></div>
+                    <div class="flex justify-between font-semibold"><span>TOTAL IMPUESTOS (ITBMS):</span><span>$${calc.tax.toFixed(2)}</span></div>
+                    <div class="flex justify-between font-bold"><span>SUBTOTAL + IMPUESTOS:</span><span>$${(calc.subtotal + calc.tax).toFixed(2)}</span></div>
+                    <div class="flex justify-between"><span>PROPINA / SERVICIO SUGERIDO (10%):</span><span>$${calc.tip.toFixed(2)}</span></div>
+                    <div class="flex justify-between font-black text-sm pt-1.5 border-t border-black">
+                        <span>TOTAL GENERAL A PAGAR:</span>
+                        <span>$${calc.grandTotal.toFixed(2)}</span>
+                    </div>
+                </div>
+
+                <!-- Detalle de Pago o Instrucciones de Precuenta -->
+                ${docType.includes('FACTURA') ? `
+                    <div class="text-[10px] space-y-0.5 border-b border-dashed border-black pb-2 mb-2">
+                        <p class="font-bold uppercase">DETALLE DE PAGO RECIBIDO:</p>
+                        <div class="flex justify-between"><span>MODALIDAD DE PAGO:</span><span class="font-bold">${calc.methods}</span></div>
+                        <div class="flex justify-between"><span>MONTO RECIBIDO DEL CLIENTE:</span><span>$${calc.tendered.toFixed(2)}</span></div>
+                        <div class="flex justify-between font-bold text-xs"><span>VUELTO / CAMBIO ENTREGADO:</span><span>$${calc.change.toFixed(2)}</span></div>
+                        <p class="text-[9px] mt-1 font-bold text-center">ESTADO: FACTURA PAGADA Y CANCELADA</p>
+                    </div>
+                ` : `
+                    <div class="text-[10px] space-y-1 border-b border-dashed border-black pb-2 mb-2 text-center">
+                        <p class="font-bold">ESTADO: CUENTA ABIERTA PENDIENTE DE PAGO</p>
+                        <p class="text-[9px]">Puedes pagar en Efectivo, Tarjeta (Visa/MC/Clave) o por Yappy buscando en el directorio a: <strong>@RestoBarPOS</strong></p>
+                    </div>
+                `}
+
+                <div class="text-center text-[10px] pt-1 space-y-0.5">
+                    <p class="font-bold">¡Gracias por preferirnos!</p>
+                    <p class="text-[9px]">Conserve su tiquete • Verificación Interna: ${docNumber}</p>
+                    <p class="text-[9px]">Sistema RestoBar POS Pro v3.5</p>
                 </div>
             `;
 
-            // Plain text version for RawBT ESC/POS Android intent
+            // Plain text version for RawBT ESC/POS Android intent (Detailed)
             lastReceiptText =
-                "      RESTOBAR POS PRO\n" +
+                "       RESTOBAR POS PRO S.A.\n" +
+                "   David, Chiriqui - RUC 155698412\n" +
                 "   *** " + docType + " ***\n" +
-                "Mesa: " + table.name + "\n" +
-                "Fecha: " + dateStr + "\n" +
                 "--------------------------------\n" +
-                calc.items.map(i => `1x ${i.name.substring(0, 18).padEnd(18)} $${i.price.toFixed(2)}`).join("\n") +
+                `DOC: ${docNumber}\n` +
+                `FECHA: ${dateStr}  HORA: ${timeStr}\n` +
+                `MESA: ${table.name} (${table.zone})\n` +
+                `SALONERO: ${table.waiter || activeWaiter}\n` +
+                (table.customerName ? `CLIENTE: ${table.customerName}\n` : '') +
+                (table.customerPhone ? `TEL: ${table.customerPhone}\n` : '') +
+                "--------------------------------\n" +
+                "CANT DESCRIPCION         IMPORTE\n" +
+                "--------------------------------\n" +
+                calc.items.map(i => `1x ${i.name.substring(0, 19).padEnd(19)} $${i.price.toFixed(2)}\n   (${i.seat || 'General'} - ${i.station})`).join("\n") +
                 "\n--------------------------------\n" +
-                `SUBTOTAL:         $${calc.subtotal.toFixed(2)}\n` +
-                `ITBMS:            $${calc.tax.toFixed(2)}\n` +
-                `PROPINA:          $${calc.tip.toFixed(2)}\n` +
-                `TOTAL:            $${calc.grandTotal.toFixed(2)}\n` +
+                `ITEMS TOTALES:    ${calc.items.length}\n` +
+                `SUBTOTAL NETO:    $${calc.subtotal.toFixed(2)}\n` +
+                `ITBMS (7% Com.):  $${tax7Total.toFixed(2)}\n` +
+                `ITBMS (10% Lic.): $${tax10Total.toFixed(2)}\n` +
+                `PROPINA (10%):    $${calc.tip.toFixed(2)}\n` +
+                "================================\n" +
+                `TOTAL A PAGAR:    $${calc.grandTotal.toFixed(2)}\n` +
+                "================================\n" +
+                (docType.includes('FACTURA')
+                    ? `METODO: ${calc.methods}\nRECIBIDO: $${calc.tendered.toFixed(2)}\nVUELTO:   $${calc.change.toFixed(2)}\n`
+                    : `CUENTA PENDIENTE DE PAGO\nYappy: @RestoBarPOS\n`) +
                 "--------------------------------\n" +
-                "    ¡Gracias por su visita!\n\n\n";
+                "   ¡Gracias por su visita!\n\n\n";
 
             document.getElementById('modal-receipt').classList.remove('hidden');
         }
@@ -8399,14 +8744,16 @@
         }
 
         function buildRoleDeviceUrl(roleMode, waiterName = '') {
-            const baseUrl = window.location.origin + window.location.pathname;
+            const baseUrl = window.location.href.split('?')[0].split('#')[0];
             const params = new URLSearchParams();
             params.set('estacion', roleMode);
             if (waiterName) {
                 params.set('salonero', waiterName);
             }
             params.set('lock', '1');
-            return `${baseUrl}?${params.toString()}`;
+            const queryStr = params.toString();
+            // Incluimos tanto ?query como #hash para que funcione en cualquier navegador, WhatsApp o iframe sin perder los parámetros
+            return `${baseUrl}?${queryStr}#${queryStr}`;
         }
 
         function copyDeviceLinkToClipboard(urlText, labelName) {
@@ -8584,6 +8931,7 @@
                 ADMIN: document.getElementById('tab-ADMIN')
             };
 
+            const topNavBar = document.querySelector('header nav');
             const waiterBox = document.getElementById('waiter-switcher-box');
             const lockedBadge = document.getElementById('locked-role-indicator');
             const lockedLabel = document.getElementById('locked-role-label');
@@ -8591,10 +8939,15 @@
             const btnWaiterCollect = document.getElementById('btn-top-waiter-collect');
             const btnLiveOrders = document.getElementById('btn-top-live-orders');
             const btnLayoutMode = document.getElementById('btn-toggle-layout-mode');
+            const btnCloudAi = document.querySelector('button[onclick="openCloudAndAiQuickModal()"]');
+            const btnAudit = document.querySelector('button[onclick="openAuditModal()"]');
 
-            // Hide all tabs first
+            // Ocultar todas las pestañas de otras estaciones y botones administrativos
             Object.values(allTabs).forEach(t => { if (t) t.classList.add('hidden'); });
+            if (topNavBar) topNavBar.classList.add('hidden'); // Oculta la barra de cambiar estación para que solo vea su área
             if (btnDeviceLinks) btnDeviceLinks.classList.add('hidden');
+            if (btnCloudAi) btnCloudAi.classList.add('hidden');
+            if (btnAudit) btnAudit.classList.add('hidden');
 
             if (cleanRole === 'SALONERO' || cleanRole === 'MESAS') {
                 const chosenWaiter = waiterName || activeWaiter || 'Carlos M.';
@@ -8614,7 +8967,7 @@
                 };
 
                 if (allTabs.MESAS) allTabs.MESAS.classList.remove('hidden');
-                if (waiterBox) waiterBox.classList.add('hidden'); // Lock user switcher so waiter can't impersonate others
+                if (waiterBox) waiterBox.classList.add('hidden');
                 if (btnWaiterCollect) btnWaiterCollect.classList.remove('hidden');
                 if (btnLiveOrders) btnLiveOrders.classList.remove('hidden');
                 if (btnLayoutMode) btnLayoutMode.classList.add('hidden');
@@ -8624,7 +8977,7 @@
                     mode: 'COCINA',
                     allowedStation: 'COCINA',
                     waiterName: '',
-                    label: 'SOLO COCINA (KDS)'
+                    label: 'PANTALLA EXCLUSIVA: COCINA'
                 };
                 if (allTabs.COCINA) allTabs.COCINA.classList.remove('hidden');
                 if (waiterBox) waiterBox.classList.add('hidden');
@@ -8636,7 +8989,7 @@
                     mode: 'BARRA',
                     allowedStation: 'BARRA',
                     waiterName: '',
-                    label: 'SOLO BARRA (BEBIDAS)'
+                    label: 'PANTALLA EXCLUSIVA: BARRA'
                 };
                 if (allTabs.BARRA) allTabs.BARRA.classList.remove('hidden');
                 if (waiterBox) waiterBox.classList.add('hidden');
@@ -8649,7 +9002,7 @@
                     mode: 'CAJA',
                     allowedStation: 'CAJA',
                     waiterName: 'Caja Principal',
-                    label: 'SOLO CAJA PRINCIPAL'
+                    label: 'PANTALLA EXCLUSIVA: CAJA'
                 };
                 if (allTabs.CAJA) allTabs.CAJA.classList.remove('hidden');
                 if (waiterBox) waiterBox.classList.add('hidden');
@@ -8658,13 +9011,22 @@
                 switchStation('CAJA');
             }
 
+            if (lockedDeviceConfig) {
+                try {
+                    sessionStorage.setItem('restobar_locked_role', JSON.stringify({
+                        roleMode: cleanRole,
+                        waiterName: waiterName || ''
+                    }));
+                } catch (e) {}
+            }
+
             if (lockedBadge && lockedLabel && lockedDeviceConfig) {
                 lockedBadge.classList.remove('hidden');
                 lockedBadge.classList.add('flex');
                 lockedLabel.textContent = `🔒 ${lockedDeviceConfig.label}`;
             }
 
-            showToast(`📱 Modo exclusivo activado: ${lockedDeviceConfig ? lockedDeviceConfig.label : cleanRole}`, 'success');
+            showToast(`📱 Acceso exclusivo activo: ${lockedDeviceConfig ? lockedDeviceConfig.label : cleanRole}`, 'success');
             renderAllViews();
         }
 
@@ -8692,17 +9054,28 @@
                     return;
                 }
                 lockedDeviceConfig = null;
+                try {
+                    sessionStorage.removeItem('restobar_locked_role');
+                    if (window.location.hash && window.location.hash.includes('estacion=')) {
+                        history.replaceState(null, '', window.location.pathname);
+                    }
+                } catch (e) {}
+
                 ['MESAS', 'COCINA', 'BARRA', 'CAJA', 'ADMIN'].forEach(st => {
                     const t = document.getElementById(`tab-${st}`);
                     if (t) t.classList.remove('hidden');
                 });
+                const topNavBar = document.querySelector('header nav');
                 const waiterBox = document.getElementById('waiter-switcher-box');
                 const lockedBadge = document.getElementById('locked-role-indicator');
                 const btnDeviceLinks = document.getElementById('btn-top-device-links');
                 const btnWaiterCollect = document.getElementById('btn-top-waiter-collect');
                 const btnLiveOrders = document.getElementById('btn-top-live-orders');
                 const btnLayoutMode = document.getElementById('btn-toggle-layout-mode');
+                const btnCloudAi = document.querySelector('button[onclick="openCloudAndAiQuickModal()"]');
+                const btnAudit = document.querySelector('button[onclick="openAuditModal()"]');
 
+                if (topNavBar) topNavBar.classList.remove('hidden');
                 if (waiterBox) waiterBox.classList.remove('hidden');
                 if (lockedBadge) {
                     lockedBadge.classList.add('hidden');
@@ -8712,6 +9085,8 @@
                 if (btnWaiterCollect) btnWaiterCollect.classList.remove('hidden');
                 if (btnLiveOrders) btnLiveOrders.classList.remove('hidden');
                 if (btnLayoutMode) btnLayoutMode.classList.remove('hidden');
+                if (btnCloudAi) btnCloudAi.classList.remove('hidden');
+                if (btnAudit) btnAudit.classList.remove('hidden');
 
                 closeSpecialAuthModal();
                 showToast('🔓 Dispositivo desbloqueado: Todas las estaciones están visibles.', 'info');
@@ -8723,14 +9098,33 @@
 
         function checkIncomingRoleUrlParams() {
             try {
-                const params = new URLSearchParams(window.location.search);
-                const stationParam = params.get('estacion') || params.get('role');
-                const waiterParam = params.get('salonero') || params.get('waiter');
+                // Soporta tanto ?estacion=SALONERO como #estacion=SALONERO (para que funcione en todo visor web)
+                const searchParams = new URLSearchParams(window.location.search);
+                const hashRaw = window.location.hash ? window.location.hash.replace(/^#\/?/, '') : '';
+                const hashParams = new URLSearchParams(hashRaw);
+
+                const stationParam = searchParams.get('estacion') || searchParams.get('role') || hashParams.get('estacion') || hashParams.get('role');
+                const waiterParam = searchParams.get('salonero') || searchParams.get('waiter') || hashParams.get('salonero') || hashParams.get('waiter');
+
                 if (stationParam) {
                     applyDeviceRoleLock(stationParam, waiterParam || '');
+                    return;
+                }
+
+                // Si recargó la página dentro de una sesión bloqueada, mantiene el bloqueo de rol
+                const savedLock = sessionStorage.getItem('restobar_locked_role');
+                if (savedLock) {
+                    const parsed = JSON.parse(savedLock);
+                    if (parsed && parsed.roleMode) {
+                        applyDeviceRoleLock(parsed.roleMode, parsed.waiterName || '');
+                    }
                 }
             } catch (e) {}
         }
+
+        window.addEventListener('hashchange', () => {
+            checkIncomingRoleUrlParams();
+        });
 
         // Check URL parameters on startup in case someone scans a real QR URL
         function checkIncomingQrUrlParams() {
@@ -8815,13 +9209,13 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
-            if (window.innerWidth < 768) {
-                setFloorViewMode('CUADRICULA');
-            }
+            // Siempre inicia en el Plano Exacto 2D tanto en Teléfono como en Tablet y Computadora
+            setFloorViewMode('MAPA');
             refreshTopWaiterSelectOptions();
             renderAllViews();
             checkIncomingRoleUrlParams();
             checkIncomingQrUrlParams();
+            setTimeout(() => applyResponsiveFloorMapScale(), 80);
             // Auto-reconnect Firebase if saved in state
             if (appState.cloudSettings && appState.cloudSettings.firebaseConfigRaw) {
                 setTimeout(() => {
