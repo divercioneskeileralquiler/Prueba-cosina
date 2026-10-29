@@ -144,21 +144,47 @@
             </nav>
 
             <!-- Right Utilities: Active Waiter, Audio Test & Audit Log -->
-            <div class="flex items-center gap-2">
-                <div class="hidden xl:flex items-center gap-1.5 bg-slate-800/80 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs">
-                    <i class="fa-solid fa-user-tag text-amber-400"></i>
-                    <span class="text-slate-400">Operador:</span>
-                    <select id="active-waiter-select" onchange="changeActiveWaiter(this.value)" class="bg-transparent font-bold text-white focus:outline-none cursor-pointer">
-                        <option value="Carlos M." class="bg-slate-900">Carlos M. (Salonero)</option>
-                        <option value="Ana P." class="bg-slate-900">Ana P. (Salonera)</option>
-                        <option value="Luis R." class="bg-slate-900">Luis R. (Barra/VIP)</option>
-                        <option value="Caja Principal" class="bg-slate-900">Caja Principal</option>
+            <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                <!-- Indicador cuando el teléfono está bloqueado por Link Único de Rol -->
+                <div id="locked-role-indicator" class="hidden items-center gap-1.5 bg-amber-500/20 border border-amber-400 text-amber-300 rounded-lg px-2.5 py-1.5 text-xs font-black">
+                    <i class="fa-solid fa-mobile-screen-button"></i>
+                    <span id="locked-role-label">MODO SALONERO</span>
+                    <button onclick="unlockDeviceRoleWithPinPrompt()" class="ml-1 text-slate-300 hover:text-white underline text-[10px]" title="Salir de modo bloqueado (Requiere PIN Admin)">
+                        <i class="fa-solid fa-key"></i>
+                    </button>
+                </div>
+
+                <div id="waiter-switcher-box" class="flex items-center gap-1.5 bg-slate-800/90 border border-amber-500/40 rounded-lg px-2.5 py-1.5 text-xs">
+                    <i class="fa-solid fa-user-lock text-amber-400"></i>
+                    <span class="text-slate-400 hidden sm:inline">Usuario:</span>
+                    <select id="active-waiter-select" onchange="changeActiveWaiter(this.value)" class="bg-transparent font-black text-white focus:outline-none cursor-pointer">
+                        <option value="Carlos M." class="bg-slate-900">👤 Carlos M. (Mesero #1)</option>
+                        <option value="Ana P." class="bg-slate-900">👤 Ana P. (Mesera #2)</option>
+                        <option value="Luis R." class="bg-slate-900">👤 Luis R. (Mesero #3)</option>
+                        <option value="Caja Principal" class="bg-slate-900">🖥️ Caja Principal (Cajero)</option>
                     </select>
                 </div>
 
-                <button onclick="openQrOrdersHubModal()" class="p-2 px-3 rounded-lg bg-cyan-500/20 hover:bg-cyan-500 hover:text-slate-950 text-cyan-300 border border-cyan-500/40 text-xs font-black flex items-center gap-1.5 transition-all shadow">
+                <button id="btn-top-device-links" onclick="openDeviceLinksQuickModal()" class="p-2 px-3 rounded-lg bg-indigo-500/20 hover:bg-indigo-500 hover:text-white text-indigo-300 border border-indigo-500/40 text-xs font-black flex items-center gap-1.5 transition-all shadow" title="Generar links únicos para instalar en los teléfonos de Saloneros, Cocina y Barra">
+                    <i class="fa-solid fa-link"></i>
+                    <span class="hidden sm:inline">Links Teléfonos</span>
+                </button>
+
+                <button id="btn-top-live-orders" onclick="openLiveOrdersAndHistoryModal('ACTIVE')" class="p-2 px-3 rounded-lg bg-amber-500/20 hover:bg-amber-500 hover:text-slate-950 text-amber-300 border border-amber-500/40 text-xs font-black flex items-center gap-1.5 transition-all shadow" title="Ver todos los pedidos en curso (Mesero, QR, Delivery) y el Historial">
+                    <i class="fa-solid fa-clipboard-list"></i>
+                    <span class="hidden sm:inline">Pedidos en Curso / Historial</span>
+                    <span id="badge-live-orders-count" class="px-1.5 py-0.5 text-[10px] rounded-full bg-amber-400 text-slate-950 font-extrabold">0</span>
+                </button>
+
+                <button id="btn-top-waiter-collect" onclick="openQuickWaiterCollectPicker()" class="p-2 px-3 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black flex items-center gap-1.5 transition-all shadow-lg shadow-emerald-500/20" title="Cobrar mesa como Salonero (Efectivo / Yappy / Tarjeta) y reportar a Caja">
+                    <i class="fa-solid fa-hand-holding-dollar"></i>
+                    <span>Cobro Salonero</span>
+                    <span id="badge-top-waiter-remit" class="px-1.5 py-0.5 text-[10px] rounded-full bg-slate-950 text-amber-400 font-mono font-extrabold">$0</span>
+                </button>
+
+                <button id="btn-top-qr-hub" onclick="openQrOrdersHubModal()" class="hidden p-2 px-3 rounded-lg bg-cyan-500/20 hover:bg-cyan-500 hover:text-slate-950 text-cyan-300 border border-cyan-500/40 text-xs font-black items-center gap-1.5 transition-all shadow">
                     <i class="fa-solid fa-mobile-retro"></i>
-                    <span class="hidden sm:inline">Pedidos QR</span>
+                    <span class="hidden sm:inline">Pedidos QR (Caja)</span>
                     <span id="badge-qr-hub-count" class="px-1.5 py-0.5 text-[10px] rounded-full bg-cyan-400 text-slate-950 font-extrabold">0</span>
                 </button>
 
@@ -251,17 +277,45 @@
                     <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span> ¡Plato/Bebida Lista!</span>
                     <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-sky-500"></span> Precuenta</span>
                     <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
+                        <button onclick="toggleWaiterOnlyMyTables()" id="btn-filter-my-tables" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 transition-all mr-1" title="Todos los meseros tienen acceso a todas las mesas, o puedes filtrar solo las tuyas">
+                            <i class="fa-solid fa-users mr-1"></i>Todas las Mesas
+                        </button>
                         <button onclick="setFloorViewMode('MAPA')" id="btn-view-mapa" class="px-2.5 py-1 rounded-lg text-xs font-black bg-amber-500 text-slate-950 transition-all">
                             <i class="fa-solid fa-map-location-dot mr-1"></i>Plano Real
                         </button>
                         <button onclick="setFloorViewMode('CUADRICULA')" id="btn-view-grid" class="px-2.5 py-1 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-all">
-                            <i class="fa-solid fa-table-cells-large mr-1"></i>Cuadrícula
+                            <i class="fa-solid fa-table-cells-large mr-1"></i>Tarjetas Celular
                         </button>
                     </div>
                     <button onclick="toggleTableLayoutEditMode()" id="btn-toggle-layout-mode" class="px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500 hover:text-slate-950 text-amber-300 border border-amber-500/50 font-extrabold text-xs flex items-center gap-1.5 transition-all shadow">
                         <i class="fa-solid fa-up-down-left-right"></i>
-                        <span id="label-layout-mode">Diseñar Plano (Mover Mesas)</span>
-                    </button>
+            <!-- BANNER DE RENDICIÓN DE DINERO DEL SALONERO (SIEMPRE VISIBLE EN VISTA MESAS) -->
+            <div id="waiter-pending-remittance-banner" class="bg-gradient-to-r from-amber-950 via-slate-900 to-emerald-950/80 border-2 border-amber-400 rounded-2xl p-4 shadow-2xl space-y-3">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-amber-500/30 pb-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-2xl bg-amber-400 text-slate-950 flex items-center justify-center font-black text-2xl shrink-0 shadow-lg">
+                            <i class="fa-solid fa-hand-holding-dollar"></i>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-amber-400/20 text-amber-300 border border-amber-400/40">Billetera del Salonero • Rendición a Caja</span>
+                            <h3 id="waiter-remit-title" class="font-black text-white text-sm sm:text-base mt-0.5">Control de Cobros del Salonero (Efectivo, Yappy y Tarjeta)</h3>
+                            <p class="text-xs text-slate-300">Lo que cobres al cliente queda cargado a tu cuenta y <strong>no se borra hasta que la Caja lo reciba y acepte</strong>.</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+                        <button onclick="openQuickWaiterCollectPicker()" class="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs shadow-lg flex items-center gap-1.5">
+                            <i class="fa-solid fa-cash-register"></i> + Cobrar una Mesa Ahora
+                        </button>
+                        <div class="flex items-center gap-3 bg-slate-950 px-4 py-2 rounded-2xl border border-amber-400/50">
+                            <div class="text-right">
+                                <span class="text-[10px] text-slate-400 font-bold uppercase block">Debes Entregar a Caja:</span>
+                                <span id="waiter-remit-total-due" class="font-mono font-black text-base sm:text-lg text-amber-400">$0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="waiter-remit-cards-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                    <!-- Populated dynamically by JS -->
                 </div>
             </div>
 
@@ -479,6 +533,28 @@
                     </span>
                     <p id="kpi-card-total" class="text-xl sm:text-2xl font-black font-mono text-purple-400 mt-1">$0.00</p>
                     <span class="text-[11px] text-slate-400">Visa / Mastercard / Clave</span>
+                </div>
+            </div>
+
+            <!-- PANEL DE RECEPCIÓN DE COBROS DE SALONEROS EN CAJA (SIEMPRE VISIBLE EN CAJA) -->
+            <div id="cashier-waiter-remittances-box" class="bg-gradient-to-r from-amber-950/90 via-slate-900 to-emerald-950/80 border-2 border-amber-400 rounded-2xl p-4 shadow-2xl space-y-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-500/30 pb-2.5">
+                    <div class="flex items-center gap-3">
+                        <div class="w-11 h-11 rounded-2xl bg-amber-400 text-slate-950 flex items-center justify-center font-black text-xl shadow-lg">
+                            <i class="fa-solid fa-money-bill-transfer"></i>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-amber-400 text-slate-950">Rendición de Saloneros a Caja</span>
+                            <h3 class="font-black text-white text-base sm:text-lg mt-0.5">Cobros Reportados por Saloneros Pendientes de Recibir en Caja</h3>
+                            <p class="text-xs text-slate-300">Aquí te indica cuánto <strong>Efectivo físico</strong>, comprobante <strong>Yappy</strong> o voucher de <strong>Tarjeta</strong> te tiene que dar el salonero antes de aceptarlo.</p>
+                        </div>
+                    </div>
+                    <span id="cashier-remit-count-badge" class="px-3 py-1.5 rounded-xl bg-slate-950 text-amber-400 border border-amber-400/40 font-mono font-black text-xs self-start sm:self-center">
+                        0 pendientes
+                    </span>
+                </div>
+                <div id="cashier-remit-list" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <!-- Populated dynamically by JS -->
                 </div>
             </div>
 
@@ -723,8 +799,11 @@
                     <button onclick="switchAdminSubTab('QR')" id="adm-tab-QR" class="px-3 py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white whitespace-nowrap transition-all">
                         <i class="fa-solid fa-qrcode mr-1 text-cyan-400"></i> 6. QR Autopedido por Mesa
                     </button>
+                    <button onclick="switchAdminSubTab('LINKS')" id="adm-tab-LINKS" class="px-3 py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white whitespace-nowrap transition-all">
+                        <i class="fa-solid fa-mobile-screen-button mr-1 text-indigo-400"></i> 7. Links Únicos por Teléfono (Saloneros / Cocina / Barra)
+                    </button>
                     <button onclick="switchAdminSubTab('CLOUD')" id="adm-tab-CLOUD" class="px-3 py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white whitespace-nowrap transition-all">
-                        <i class="fa-solid fa-wand-magic-sparkles mr-1 text-purple-400"></i> 7. Cloud, Voz & IA (Gemini / Firebase)
+                        <i class="fa-solid fa-wand-magic-sparkles mr-1 text-purple-400"></i> 8. Cloud, Voz & IA (Gemini / Firebase)
                     </button>
                     <button onclick="lockAdminSession()" class="px-3 py-2 rounded-lg text-xs font-bold bg-rose-500/20 hover:bg-rose-500 text-rose-300 hover:text-white border border-rose-500/30 whitespace-nowrap transition-all ml-1" title="Cerrar sesión administrativa">
                         <i class="fa-solid fa-lock mr-1"></i> Bloquear Admin
@@ -1317,7 +1396,57 @@
                 </div>
             </div>
 
-            <!-- SUB-VISTA 5.7: CONEXIÓN GEMINI API, FIREBASE POR CAPTURA DE PANTALLA, VOZ EN VIVO Y DIAGNÓSTICO -->
+            <!-- SUB-VISTA 5.7 (NUEVO): GENERADOR DE LINKS ÚNICOS Y BLOQUEADOS POR TELÉFONO / ROL -->
+            <div id="adm-view-LINKS" class="hidden space-y-4">
+                <div class="bg-gradient-to-r from-indigo-950/80 via-slate-900 to-amber-950/50 border-2 border-indigo-400/50 rounded-2xl p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div class="flex items-start gap-3.5">
+                        <div class="w-12 h-12 rounded-2xl bg-indigo-500 text-white flex items-center justify-center text-2xl font-black shrink-0 shadow-lg shadow-indigo-500/20">
+                            <i class="fa-solid fa-mobile-screen-button"></i>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">Instalación en Diferentes Teléfonos</span>
+                            <h3 class="font-black text-white text-base sm:text-lg mt-0.5">Links Únicos Exclusivos por Salonero, Cocina, Barra y Caja</h3>
+                            <p class="text-xs text-slate-300 mt-1 max-w-3xl leading-relaxed">
+                                Cada link de abajo abre el sistema <strong>bloqueado exclusivamente en el área que le corresponde</strong>: el link de un salonero solo muestra sus mesas y su usuario fijo (sin poder entrar a Caja, Cocina ni Admin); el link de <strong>Cocina</strong> solo muestra la pantalla KDS de Cocina; y el link de <strong>Barra</strong> solo muestra la pantalla de Barra.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Agregar un nuevo Salonero para generar su propio link -->
+                    <div class="flex items-center gap-2 bg-slate-950 p-2.5 rounded-2xl border border-slate-800 shrink-0">
+                        <input type="text" id="new-waiter-link-name" placeholder="Nuevo Salonero (Ej. Pedro G.)" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white focus:border-amber-400 focus:outline-none">
+                        <button onclick="addNewWaiterForLink()" class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs whitespace-nowrap shadow">
+                            <i class="fa-solid fa-user-plus mr-1"></i> + Crear Salonero y Link
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Sección 1: Links Individuales para el Teléfono de Cada Salonero -->
+                <div class="space-y-2.5">
+                    <div class="flex items-center justify-between">
+                        <h4 class="text-sm font-black uppercase tracking-wider text-amber-400 flex items-center gap-2">
+                            <i class="fa-solid fa-users"></i>
+                            <span>1. Links Únicos por Salonero (Solo acceso a Saloneros / Mesas con su Usuario Fijo)</span>
+                        </h4>
+                    </div>
+                    <div id="admin-waiter-links-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- Populated dynamically by JS -->
+                    </div>
+                </div>
+
+                <!-- Sección 2: Links Exclusivos para Pantallas / Teléfonos de Cocina, Barra y Caja -->
+                <div class="space-y-2.5 pt-3 border-t border-slate-800">
+                    <h4 class="text-sm font-black uppercase tracking-wider text-cyan-400 flex items-center gap-2">
+                        <i class="fa-solid fa-display"></i>
+                        <span>2. Links Exclusivos de Estación: Solo Cocina, Solo Barra y Solo Caja</span>
+                    </h4>
+                    <div id="admin-station-links-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Populated dynamically by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUB-VISTA 5.8: CONEXIÓN GEMINI API, FIREBASE POR CAPTURA DE PANTALLA, VOZ EN VIVO Y DIAGNÓSTICO -->
             <div id="adm-view-CLOUD" class="hidden space-y-4">
                 <!-- Estado de Interconexión de los 7 Módulos -->
                 <div class="bg-slate-900 border-2 border-emerald-500/40 rounded-2xl p-4 space-y-3">
@@ -1622,6 +1751,14 @@
                 <!-- Left 7 Cols: Menu Categories & Products -->
                 <div class="lg:col-span-7 p-3 sm:p-4 flex flex-col overflow-hidden border-b lg:border-b-0 lg:border-r border-slate-800">
                     <!-- Category Pills -->
+                    <div class="flex items-center justify-between gap-2 pb-2 mb-2 border-b border-slate-800 lg:hidden">
+                        <button onclick="switchMobileComanderoPane('MENU')" id="mob-cmd-tab-menu" class="flex-1 py-2 rounded-xl text-xs font-black bg-amber-500 text-slate-950">
+                            📖 1. Carta / Menú
+                        </button>
+                        <button onclick="switchMobileComanderoPane('ORDER')" id="mob-cmd-tab-order" class="flex-1 py-2 rounded-xl text-xs font-black bg-slate-800 text-slate-300">
+                            🧾 2. Mi Pedido y Enviar
+                        </button>
+                    </div>
                     <div class="flex items-center gap-2 overflow-x-auto pb-2.5 mb-2 border-b border-slate-800">
                         <button onclick="filterMenuCategory('ALL')" id="cat-ALL" class="menu-cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 whitespace-nowrap">
                             Todos
@@ -1718,10 +1855,120 @@
                                 <i class="fa-solid fa-file-invoice-dollar"></i>
                                 <span>Pedir Precuenta</span>
                             </button>
+
+                            <button onclick="openWaiterCollectModal()" id="btn-waiter-collect-table" class="col-span-2 sm:col-span-3 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs sm:text-sm shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all">
+                                <i class="fa-solid fa-hand-holding-dollar text-base"></i>
+                                <span id="label-btn-waiter-collect">COBRAR AL CLIENTE (EFECTIVO / YAPPY / TARJETA) Y REPORTAR A CAJA</span>
+                            </button>
                         </div>
                     </div>
                 </div>
 
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- NUEVO MODAL: COBRO DEL SALONERO AL CLIENTE Y RENDICIÓN A CAJA             -->
+    <!-- ========================================================================= -->
+    <div id="modal-waiter-collect" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-5">
+        <div class="bg-slate-900 border-2 border-emerald-400 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[94vh]">
+            <div class="p-4 sm:p-5 bg-slate-950 border-b border-slate-800 flex items-center justify-between gap-2">
+                <div class="flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-2xl bg-emerald-400 text-slate-950 flex items-center justify-center text-xl font-black shadow-lg">
+                        <i class="fa-solid fa-hand-holding-dollar"></i>
+                    </div>
+                    <div>
+                        <span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Cobro en Mesa por Salonero</span>
+                        <h3 id="wcol-table-title" class="font-black text-white text-base sm:text-lg mt-0.5">Reportar Cobro a Caja - Mesa 1</h3>
+                    </div>
+                </div>
+                <button onclick="closeWaiterCollectModal()" class="w-9 h-9 rounded-xl bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="p-4 sm:p-5 overflow-y-auto space-y-4 text-xs">
+                <div class="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 leading-relaxed">
+                    <i class="fa-solid fa-circle-info text-amber-400 mr-1"></i>
+                    Registra cómo te pagó el cliente. <strong>La mesa y el saldo seguirán asignados a tu cuenta</strong> hasta que entregues el dinero en la Caja y el Cajero lo acepte.
+                </div>
+
+                <!-- Resumen de Totales e Inclusión de Propina -->
+                <div class="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2">
+                    <div class="flex justify-between text-slate-300">
+                        <span>Subtotal Consumo:</span>
+                        <span id="wcol-subtotal" class="font-mono font-bold">$0.00</span>
+                    </div>
+                    <div class="flex justify-between text-slate-300">
+                        <span>ITBMS (Impuesto):</span>
+                        <span id="wcol-tax" class="font-mono font-bold">$0.00</span>
+                    </div>
+                    <div class="flex items-center justify-between text-slate-300 pt-1">
+                        <span>Propina Incluida:</span>
+                        <div class="flex items-center gap-1">
+                            <button onclick="setWaiterCollectTip(0)" id="wcol-tip-0" class="px-2 py-1 rounded bg-slate-800 text-[11px] font-bold">0%</button>
+                            <button onclick="setWaiterCollectTip(10)" id="wcol-tip-10" class="px-2 py-1 rounded bg-amber-500 text-slate-950 text-[11px] font-bold">10%</button>
+                            <button onclick="setWaiterCollectTip(15)" id="wcol-tip-15" class="px-2 py-1 rounded bg-slate-800 text-[11px] font-bold">15%</button>
+                            <span id="wcol-tip-amount" class="font-mono font-bold text-amber-400 ml-1">$0.00</span>
+                        </div>
+                    </div>
+                    <div class="pt-2 border-t border-slate-800 flex justify-between items-baseline">
+                        <span class="text-sm font-black text-white">TOTAL COBRADO AL CLIENTE:</span>
+                        <span id="wcol-grand-total" class="text-2xl font-black font-mono text-emerald-400">$0.00</span>
+                    </div>
+                </div>
+
+                <!-- Atajos de Método de Pago -->
+                <div class="flex flex-wrap items-center justify-between gap-1.5">
+                    <span class="text-[11px] font-bold uppercase text-slate-400">¿Cómo pagó el cliente?</span>
+                    <div class="flex items-center gap-1.5">
+                        <button onclick="fillWaiterCollectMethod('CASH')" class="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold text-[11px]">Todo Efectivo</button>
+                        <button onclick="fillWaiterCollectMethod('YAPPY')" class="px-2.5 py-1 rounded-lg bg-sky-500/20 text-sky-300 border border-sky-500/30 font-bold text-[11px]">Todo Yappy</button>
+                        <button onclick="fillWaiterCollectMethod('CARD')" class="px-2.5 py-1 rounded-lg bg-purple-500/20 text-purple-300 border border-purple-500/30 font-bold text-[11px]">Todo Tarjeta</button>
+                    </div>
+                </div>
+
+                <!-- Inputs de Efectivo, Yappy y Tarjeta recibidos por el Salonero -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <label class="text-[10px] font-bold text-emerald-400 block mb-1"><i class="fa-solid fa-money-bill-wave mr-1"></i>Efectivo Recibido ($)</label>
+                        <input type="number" step="0.01" id="wcol-input-cash" oninput="updateWaiterCollectMath()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 font-mono font-black text-sm text-white focus:border-emerald-400 focus:outline-none" value="0.00">
+                    </div>
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <label class="text-[10px] font-bold text-sky-400 block mb-1"><i class="fa-solid fa-mobile-screen mr-1"></i>Cobrado en Yappy ($)</label>
+                        <input type="number" step="0.01" id="wcol-input-yappy" oninput="updateWaiterCollectMath()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 font-mono font-black text-sm text-white focus:border-sky-400 focus:outline-none" value="0.00">
+                    </div>
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <label class="text-[10px] font-bold text-purple-400 block mb-1"><i class="fa-regular fa-credit-card mr-1"></i>Cobrado en Tarjeta ($)</label>
+                        <input type="number" step="0.01" id="wcol-input-card" oninput="updateWaiterCollectMath()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 font-mono font-black text-sm text-white focus:border-purple-400 focus:outline-none" value="0.00">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-[10px] font-bold text-slate-400 block mb-1">Referencia / N° Comprobante Yappy o Voucher POS (Opcional)</label>
+                    <input type="text" id="wcol-input-ref" placeholder="Ej. Yappy #84920 a nombre de Ana / Voucher #14" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:border-amber-400 focus:outline-none">
+                </div>
+
+                <!-- Desglose Claro: Vuelto al Cliente y Cuánto Entregar a Caja -->
+                <div class="p-3.5 rounded-2xl bg-slate-950 border-2 border-amber-500/50 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span id="wcol-change-label" class="text-slate-300 font-bold">Vuelto a darle al cliente:</span>
+                        <span id="wcol-change-client" class="font-mono font-black text-base text-emerald-400">$0.00</span>
+                    </div>
+                    <div class="pt-2 border-t border-slate-800 flex items-center justify-between">
+                        <span class="text-amber-300 font-black uppercase text-[11px]"><i class="fa-solid fa-vault mr-1"></i>EFECTIVO NETO QUE DEBES ENTREGAR A CAJA:</span>
+                        <span id="wcol-net-cash-to-box" class="font-mono font-black text-lg text-amber-400">$0.00</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 bg-slate-950 border-t border-slate-800 flex items-center justify-end gap-2">
+                <button onclick="closeWaiterCollectModal()" class="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 font-bold text-xs">Cancelar</button>
+                <button onclick="submitWaiterCollectionReportToCashier()" class="px-5 py-3 rounded-xl bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-300 hover:to-teal-400 text-slate-950 font-black text-xs sm:text-sm shadow-xl flex items-center gap-2">
+                    <i class="fa-solid fa-paper-plane"></i>
+                    <span>REPORTAR COBRO A CAJA PARA SU APROBACIÓN</span>
+                </button>
             </div>
         </div>
     </div>
@@ -2281,6 +2528,62 @@
         </div>
     </div>
 
+    <!-- ========================================================================= -->
+    <!-- NUEVO MODAL: MÓDULO DE PEDIDOS EN CURSO (MESERO / QR / DELIVERY) + HISTORIAL -->
+    <!-- ========================================================================= -->
+    <div id="modal-live-orders-history" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-2 sm:p-5">
+        <div class="bg-slate-900 border-2 border-amber-500/60 w-full max-w-6xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+            <!-- Header -->
+            <div class="p-4 sm:p-5 bg-slate-950 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-2xl bg-amber-500 text-slate-950 flex items-center justify-center text-xl font-black shadow-lg shadow-amber-500/20">
+                        <i class="fa-solid fa-clipboard-list"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-black text-white text-base sm:text-xl">Módulo de Pedidos en Curso e Historial de Pedidos</h3>
+                        <p class="text-xs text-slate-400">Monitorea todos los pedidos activos (por Mesero, QR o Delivery) y consulta los pedidos ya cobrados.</p>
+                    </div>
+                </div>
+
+                <!-- Pestañas: En Curso vs Historial -->
+                <div class="flex items-center gap-2">
+                    <div class="flex items-center bg-slate-900 p-1 rounded-xl border border-slate-800">
+                        <button onclick="switchLiveOrdersModalTab('ACTIVE')" id="tab-modal-live-active" class="px-3.5 py-2 rounded-lg text-xs font-black bg-amber-500 text-slate-950 transition-all">
+                            🔥 Pedidos en Curso (<span id="modal-live-count-pill">0</span>)
+                        </button>
+                        <button onclick="switchLiveOrdersModalTab('HISTORY')" id="tab-modal-live-history" class="px-3.5 py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-all">
+                            📜 Historial Cobrados (<span id="modal-history-count-pill">0</span>)
+                        </button>
+                    </div>
+                    <button onclick="closeLiveOrdersAndHistoryModal()" class="w-10 h-10 rounded-xl bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Sub-filtros para Pedidos en Curso (Todos, Mesero, QR, Delivery) -->
+            <div id="live-orders-filter-bar" class="px-4 py-2.5 bg-slate-900/90 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+                <div class="flex items-center gap-1.5 overflow-x-auto">
+                    <button onclick="setLiveOrdersOriginFilter('ALL')" id="flt-origin-ALL" class="px-3 py-1.5 rounded-xl font-black bg-amber-500 text-slate-950">Todos</button>
+                    <button onclick="setLiveOrdersOriginFilter('MESERO')" id="flt-origin-MESERO" class="px-3 py-1.5 rounded-xl font-bold bg-slate-800 text-slate-300">👤 Por Mesero</button>
+                    <button onclick="setLiveOrdersOriginFilter('QR')" id="flt-origin-QR" class="px-3 py-1.5 rounded-xl font-bold bg-slate-800 text-cyan-300">📲 Por QR</button>
+                    <button onclick="setLiveOrdersOriginFilter('DELIVERY')" id="flt-origin-DELIVERY" class="px-3 py-1.5 rounded-xl font-bold bg-slate-800 text-emerald-300">🛵 Delivery / Para Llevar</button>
+                </div>
+                <span class="text-[11px] text-slate-400">Al atender una mesa libre, se auto-asigna al mesero hasta que se cobre la factura.</span>
+            </div>
+
+            <!-- Contenido: Pedidos en Curso -->
+            <div id="live-orders-active-container" class="flex-1 overflow-y-auto p-4 sm:p-5 grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                <!-- Populated dynamically by JS -->
+            </div>
+
+            <!-- Contenido: Historial de Pedidos Cerrados -->
+            <div id="live-orders-history-container" class="hidden flex-1 overflow-y-auto p-4 sm:p-5 space-y-2.5">
+                <!-- Populated dynamically by JS -->
+            </div>
+        </div>
+    </div>
+
     <!-- TOAST NOTIFICATION CONTAINER -->
     <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
 
@@ -2343,6 +2646,13 @@
         let editingSaleId = null;
         let qrPortalTableId = null;
         let qrCustomerCart = [];
+        let filterOnlyMyWaiterTables = false; // Por defecto todos los meseros ven todas las mesas
+        let mobileComanderoActivePane = 'MENU';
+        let liveOrdersModalTab = 'ACTIVE';
+        let liveOrdersOriginFilter = 'ALL';
+        let waiterCollectTipPct = 10;
+        let lockedDeviceConfig = null; // { mode: 'SALONERO' | 'COCINA' | 'BARRA' | 'CAJA', waiterName: '' }
+        const WAITERS_LIST = ['Carlos M.', 'Ana P.', 'Luis R.'];
 
         // Cross-Tab Real-Time Sync Channel
         const syncChannel = ('BroadcastChannel' in window) ? new BroadcastChannel('restobar_pos_sync') : null;
@@ -2382,10 +2692,10 @@
                     restaurantLng: -82.430800
                 },
                 alertSettings: {
-                    targetCalls: 'TODAS',      // 'TODAS' | 'MESAS,CAJA' | 'MESAS' | 'CAJA' | 'BARRA,CAJA'
-                    targetQrOrders: 'TODAS',   // 'TODAS' | 'MESAS,CAJA' | 'COCINA,BARRA,CAJA' | 'CAJA'
-                    overdueMinutes: 10,        // Minutos máximos antes de disparar recordatorio si no se ha entregado
-                    targetOverdue: 'TODAS'     // 'TODAS' | 'COCINA,BARRA,CAJA' | 'CAJA' | 'COCINA,BARRA' | 'MESAS,CAJA'
+                    targetCalls: 'MESAS,CAJA',      // 'TODAS' | 'MESAS,CAJA' | 'MESAS' | 'CAJA' | 'BARRA,CAJA'
+                    targetQrOrders: 'CAJA',         // Solo al Cajero por defecto
+                    overdueMinutes: 10,             // Minutos máximos antes de disparar recordatorio si no se ha entregado
+                    targetOverdue: 'MESAS,CAJA'     // Al mesero asignado y a la Caja
                 },
                 persistentNotifications: [
                     {
@@ -2394,10 +2704,11 @@
                         tableId: 2,
                         tableName: 'Mesa 2 (Centro)',
                         zone: 'Salón Principal',
-                        title: '📲 NUEVO AUTOPEDIDO QR EN MESA 2 (CENTRO)',
-                        message: 'Cliente pidió desde su celular: 1x Cubetazo Nacional, 1x Picada Mixta Grande ($34.00)',
+                        waiter: 'Carlos M.',
+                        title: '📲 NUEVO AUTOPEDIDO QR EN MESA 2 (SOLO CAJA)',
+                        message: 'Cliente pidió desde su celular: 1x Cubetazo Nacional, 1x Picada Mixta Grande ($34.00). Asígnalo a un mesero.',
                         createdAt: now - (4 * 60000),
-                        targets: 'TODAS',
+                        targets: 'CAJA',
                         qrOrderId: 'QRO-101'
                     }
                 ],
@@ -2408,6 +2719,7 @@
                         tableName: 'Mesa 2 (Centro)',
                         zone: 'Salón Principal',
                         customerName: 'Carlos (QR)',
+                        assignedWaiter: '',
                         note: 'Bien fría la cerveza',
                         items: [
                             { name: 'Cubetazo (6x Cerveza Nacional)', price: 12.00, station: 'BARRA' },
@@ -2415,9 +2727,30 @@
                         ],
                         totalWithTax: 36.74,
                         createdAt: now - (11 * 60000),
-                        acceptedByStaff: true,
+                        acceptedByStaff: false,
                         deliveredAt: null,
                         lastReminderAt: 0
+                    }
+                ],
+                waiterPendingRemittances: [
+                    {
+                        id: 'REM-DEMO1',
+                        tableId: 9,
+                        tableName: 'VIP Lounge 1',
+                        zone: 'Barra / VIP',
+                        waiter: 'Luis R.',
+                        subtotal: 87.00,
+                        tax: 8.04,
+                        tip: 8.70,
+                        grandTotal: 103.74,
+                        cashReceivedFromClient: 70.00,
+                        changeGivenToClient: 6.26,
+                        netCashToDeliver: 63.74,
+                        yappyAmount: 40.00,
+                        cardAmount: 0.00,
+                        refNote: 'Yappy #99281 + Efectivo',
+                        methodsSummary: 'Efectivo $63.74 + Yappy $40.00',
+                        createdAt: now - (3 * 60000)
                     }
                 ],
                 lastOrderAlert: null,
@@ -2544,6 +2877,10 @@
             }
             if (!Array.isArray(state.persistentNotifications)) state.persistentNotifications = [];
             if (!Array.isArray(state.qrOrdersLog)) state.qrOrdersLog = [];
+            if (!Array.isArray(state.waiterPendingRemittances)) state.waiterPendingRemittances = [];
+            if (!Array.isArray(state.waitersCatalog) || state.waitersCatalog.length === 0) {
+                state.waitersCatalog = ['Carlos M.', 'Ana P.', 'Luis R.'];
+            }
             // Auto-rotate daily QR token if calendar day changed
             const todayStr = getTodayDateString();
             if (state.qrConfig.dailyDate !== todayStr) {
@@ -2765,6 +3102,10 @@
          * 4. CAMBIO DE ESTACIÓN Y FILTROS
          ***********************************************************************/
         function switchStation(station) {
+            if (lockedDeviceConfig && lockedDeviceConfig.allowedStation && station !== lockedDeviceConfig.allowedStation) {
+                showToast(`🔒 Este teléfono está configurado únicamente para el área de ${lockedDeviceConfig.label}.`, 'warning');
+                station = lockedDeviceConfig.allowedStation;
+            }
             currentStation = station;
             ['MESAS', 'COCINA', 'BARRA', 'CAJA', 'ADMIN'].forEach(st => {
                 const view = document.getElementById(`view-${st}`);
@@ -2835,7 +3176,7 @@
 
         function switchAdminSubTab(subTab) {
             currentAdminSubTab = subTab;
-            ['INVENTARIO', 'ARQUEO', 'MENU', 'REPORTES', 'HISTORIAL', 'QR', 'CLOUD'].forEach(st => {
+            ['INVENTARIO', 'ARQUEO', 'MENU', 'REPORTES', 'HISTORIAL', 'QR', 'LINKS', 'CLOUD'].forEach(st => {
                 const view = document.getElementById(`adm-view-${st}`);
                 const btn = document.getElementById(`adm-tab-${st}`);
                 if (!view || !btn) return;
@@ -2851,8 +3192,62 @@
         }
 
         function changeActiveWaiter(name) {
+            if (lockedDeviceConfig && lockedDeviceConfig.mode === 'SALONERO' && lockedDeviceConfig.waiterName && name !== lockedDeviceConfig.waiterName) {
+                showToast(`🔒 Este teléfono pertenece únicamente al salonero ${lockedDeviceConfig.waiterName}.`, 'warning');
+                const selectEl = document.getElementById('active-waiter-select');
+                if (selectEl) selectEl.value = lockedDeviceConfig.waiterName;
+                return;
+            }
             activeWaiter = name;
-            showToast(`Operador activo cambiado a: ${name}`, 'info');
+            const selectEl = document.getElementById('active-waiter-select');
+            if (selectEl && selectEl.value !== name) selectEl.value = name;
+            if (name === 'Caja Principal' && currentStation === 'MESAS') {
+                switchStation('CAJA');
+            } else if (name !== 'Caja Principal' && currentStation === 'CAJA') {
+                switchStation('MESAS');
+            }
+            showToast(`Sesión activa: ${name}`, 'info');
+            renderAllViews();
+        }
+
+        function toggleWaiterOnlyMyTables() {
+            filterOnlyMyWaiterTables = !filterOnlyMyWaiterTables;
+            const btn = document.getElementById('btn-filter-my-tables');
+            if (btn) {
+                btn.className = filterOnlyMyWaiterTables
+                    ? 'px-2.5 py-1 rounded-lg text-xs font-black bg-emerald-500 text-slate-950 transition-all mr-1'
+                    : 'px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 transition-all mr-1';
+                btn.innerHTML = filterOnlyMyWaiterTables
+                    ? '<i class="fa-solid fa-user-check mr-1"></i>Solo Mis Mesas'
+                    : '<i class="fa-solid fa-users mr-1"></i>Todas las Mesas';
+            }
+            renderTablesGrid();
+        }
+
+        function switchMobileComanderoPane(pane) {
+            mobileComanderoActivePane = pane;
+            const leftCatalog = document.querySelector('#modal-comandero .lg\\:col-span-7');
+            const rightOrder = document.querySelector('#modal-comandero .lg\\:col-span-5');
+            const btnMenu = document.getElementById('mob-cmd-tab-menu');
+            const btnOrder = document.getElementById('mob-cmd-tab-order');
+            if (!leftCatalog || !rightOrder) return;
+
+            if (window.innerWidth < 1024) {
+                if (pane === 'ORDER') {
+                    leftCatalog.classList.add('hidden');
+                    rightOrder.classList.remove('hidden');
+                    if (btnOrder) btnOrder.className = 'flex-1 py-2 rounded-xl text-xs font-black bg-amber-500 text-slate-950';
+                    if (btnMenu) btnMenu.className = 'flex-1 py-2 rounded-xl text-xs font-black bg-slate-800 text-slate-300';
+                } else {
+                    leftCatalog.classList.remove('hidden');
+                    rightOrder.classList.add('hidden');
+                    if (btnMenu) btnMenu.className = 'flex-1 py-2 rounded-xl text-xs font-black bg-amber-500 text-slate-950';
+                    if (btnOrder) btnOrder.className = 'flex-1 py-2 rounded-xl text-xs font-black bg-slate-800 text-slate-300';
+                }
+            } else {
+                leftCatalog.classList.remove('hidden');
+                rightOrder.classList.remove('hidden');
+            }
         }
 
         function filterZone(zone) {
@@ -3165,15 +3560,27 @@
             const grid = document.getElementById('tables-grid');
             if (!grid) return;
 
-            const filtered = selectedZone === 'TODAS'
+            renderWaiterPendingRemittanceBanner();
+
+            const isWaiterUser = activeWaiter !== 'Caja Principal' && currentStation === 'MESAS';
+            const zoneFiltered = selectedZone === 'TODAS'
                 ? appState.tables
                 : appState.tables.filter(t => t.zone === selectedZone);
 
-            // Check if any table has READY items for Waiter Alert Banner
+            // Si es un mesero y tiene activo "Solo Lo Mío", solo ve las mesas libres o las que él mismo atiende (o que Caja le asignó por QR)
+            const filtered = zoneFiltered.filter(t => {
+                if (!isWaiterUser || !filterOnlyMyWaiterTables) return true;
+                const isOccupied = t.items && t.items.length > 0;
+                if (!isOccupied) return true;
+                return t.waiter === activeWaiter;
+            });
+
+            // Check if any table has READY items for Waiter Alert Banner (filtrado por mesero único)
             let totalReadyItems = 0;
             const tablesWithReady = [];
             appState.tables.forEach(t => {
                 if (t.isSpacer) return;
+                if (isWaiterUser && t.waiter && t.waiter !== activeWaiter) return;
                 const rItems = (t.items || []).filter(i => i.status === 'READY');
                 if (rItems.length > 0) {
                     totalReadyItems += rItems.length;
@@ -3275,7 +3682,10 @@
                         ? `<span class="text-[10px] font-black px-2 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">${table.deliveryType === 'DELIVERY' ? '🛵 DELIVERY' : '🛍️ LLEVAR'}</span>`
                         : `<span class="text-[9px] font-black px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">${seats} Sillas</span>`;
 
-                    if (hasReady) {
+                    if (table.pendingCashierApproval) {
+                        surfaceClass = 'bg-gradient-to-b from-amber-950 via-slate-900 to-slate-900 border-2 border-amber-400 new-order-flash';
+                        statusTag = `<span class="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-400 text-slate-950">⏳ ENTREGAR A CAJA</span>`;
+                    } else if (hasReady) {
                         surfaceClass = 'bg-gradient-to-b from-emerald-950 to-slate-900 border-2 border-emerald-400 ready-glow';
                         statusTag = `<span class="text-[9px] font-black px-1.5 py-0.5 rounded bg-emerald-400 text-slate-950 animate-bounce">¡LISTO (${readyItems.length})!</span>`;
                     } else if (table.prebillRequested) {
@@ -3388,7 +3798,10 @@
                     ? `<span class="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">${table.deliveryType === 'DELIVERY' ? '🛵 DELIVERY' : '🛍️ PARA LLEVAR'}</span>`
                     : `<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">${table.seats || 4} SILLAS • LIBRE</span>`;
 
-                if (hasReady) {
+                if (table.pendingCashierApproval) {
+                    cardStyle = `bg-gradient-to-b from-amber-950/90 to-slate-900 border-2 border-amber-400 new-order-flash ${isTakeoutZone ? 'col-span-2' : ''}`;
+                    badgeHtml = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-400 text-slate-950">⏳ ENTREGAR A CAJA ($${totals.totalWithTax.toFixed(2)})</span>`;
+                } else if (hasReady) {
                     cardStyle = `bg-gradient-to-b from-emerald-950/90 to-slate-900 border-2 border-emerald-400 ready-glow ${isTakeoutZone ? 'col-span-2' : ''}`;
                     badgeHtml = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-400 text-slate-950 animate-pulse">¡ENTREGAR (${readyItems.length})!</span>`;
                 } else if (isOccupied) {
@@ -3508,6 +3921,9 @@
             document.getElementById('cmd-table-waiter').innerHTML = `<i class="fa-solid fa-user-tie text-amber-400 mr-1"></i>Atiende: ${table.waiter || activeWaiter}`;
             document.getElementById('modal-comandero').classList.remove('hidden');
 
+            const hasReadyNow = (table.items || []).some(i => i.status === 'READY');
+            switchMobileComanderoPane(hasReadyNow ? 'ORDER' : 'MENU');
+
             renderMenuProducts();
             renderComanderoOrderList();
         }
@@ -3579,8 +3995,13 @@
 
             if (!table.openedAt) {
                 table.openedAt = Date.now();
-                table.waiter = activeWaiter;
                 table.status = 'OCUPADA';
+            }
+            // Auto-asignar la mesa al mesero que la atiende hasta que se cobre la factura
+            if (!table.waiter || table.waiter === 'Por Asignar (QR)') {
+                table.waiter = activeWaiter !== 'Caja Principal' ? activeWaiter : (table.waiter || 'Caja Principal');
+                document.getElementById('cmd-table-waiter').innerHTML = `<i class="fa-solid fa-user-tie text-amber-400 mr-1"></i>Atiende (Auto-asignado): ${table.waiter}`;
+                showToast(`📌 ${table.name} auto-asignada a ${table.waiter} hasta el cobro de factura.`, 'info');
             }
 
             const seat = document.getElementById('cmd-current-seat').value;
@@ -3721,6 +4142,22 @@
             document.getElementById('cmd-unsent-indicator').textContent = unsentCount > 0
                 ? `${unsentCount} producto(s) nuevo(s) listo(s) para marchar`
                 : `Todos los productos han sido comandados`;
+            const btnMobOrder = document.getElementById('mob-cmd-tab-order');
+            if (btnMobOrder) {
+                btnMobOrder.textContent = `🧾 2. Mi Pedido (${table.items.length}) - $${totals.totalWithTax.toFixed(2)}`;
+            }
+
+            const btnCollect = document.getElementById('btn-waiter-collect-table');
+            const lblCollect = document.getElementById('label-btn-waiter-collect');
+            if (btnCollect && lblCollect) {
+                if (table.pendingCashierApproval) {
+                    btnCollect.className = 'col-span-2 sm:col-span-3 py-3 px-4 rounded-xl bg-amber-500/20 border-2 border-amber-400 text-amber-300 font-black text-xs sm:text-sm flex items-center justify-center gap-2';
+                    lblCollect.textContent = '⏳ COBRO REPORTADO • ESPERANDO QUE CAJA RECIBA EL DINERO Y APRUEBE';
+                } else {
+                    btnCollect.className = 'col-span-2 sm:col-span-3 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs sm:text-sm shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all';
+                    lblCollect.textContent = 'COBRAR AL CLIENTE (EFECTIVO / YAPPY / TARJETA) Y REPORTAR A CAJA';
+                }
+            }
         }
 
         function deliverSingleItemInTable(itemUid) {
@@ -3879,6 +4316,9 @@
 
             table.status = 'OCUPADA';
             table.prebillRequested = false;
+            if (!table.waiter || table.waiter === 'Por Asignar (QR)') {
+                table.waiter = activeWaiter;
+            }
 
             const orderAlert = {
                 tableName: table.name,
@@ -3939,6 +4379,409 @@
             }
             table.prebillRequested = true;
             generateThermalReceipt(table, 'PRECUENTA');
+            broadcastStateUpdate();
+        }
+
+        /***********************************************************************
+         * 6.5 MODALIDAD: COBRO DEL SALONERO AL CLIENTE Y RENDICIÓN A CAJA
+         ***********************************************************************/
+        function openQuickWaiterCollectPicker() {
+            const occupied = (appState.tables || []).filter(t => !t.isSpacer && t.items && t.items.length > 0);
+            if (occupied.length === 0) {
+                showToast('No hay mesas con cuenta abierta en este momento.', 'warning');
+                return;
+            }
+            const myTable = occupied.find(t => t.waiter === activeWaiter) || occupied[0];
+            activeTableId = myTable.id;
+            openWaiterCollectModal();
+        }
+
+        function openWaiterCollectModal() {
+            const table = appState.tables.find(t => t.id === activeTableId);
+            if (!table || table.items.length === 0) {
+                showToast('Esta mesa no tiene productos cargados para cobrar.', 'warning');
+                return;
+            }
+            const unsent = table.items.filter(i => i.status === 'NEW');
+            if (unsent.length > 0) {
+                showToast('Primero debes marchar los productos nuevos a Cocina/Barra antes de cobrar.', 'warning');
+                return;
+            }
+
+            waiterCollectTipPct = 10;
+            document.getElementById('wcol-table-title').textContent = `Cobro de ${table.name} (${table.waiter || activeWaiter})`;
+            document.getElementById('wcol-input-ref').value = '';
+            setWaiterCollectTip(10);
+            fillWaiterCollectMethod('CASH');
+            document.getElementById('modal-waiter-collect').classList.remove('hidden');
+        }
+
+        function closeWaiterCollectModal() {
+            document.getElementById('modal-waiter-collect').classList.add('hidden');
+        }
+
+        function getWaiterCollectTotals() {
+            const table = appState.tables.find(t => t.id === activeTableId);
+            if (!table) return { subtotal: 0, tax: 0, tip: 0, grandTotal: 0 };
+            const raw = calculateTableTotals(table);
+            const tip = +(raw.subtotal * (waiterCollectTipPct / 100)).toFixed(2);
+            const grandTotal = +(raw.totalWithTax + tip).toFixed(2);
+            return {
+                subtotal: raw.subtotal,
+                tax: raw.tax,
+                tip,
+                grandTotal
+            };
+        }
+
+        function setWaiterCollectTip(pct) {
+            waiterCollectTipPct = pct;
+            [0, 10, 15].forEach(p => {
+                const btn = document.getElementById(`wcol-tip-${p}`);
+                if (!btn) return;
+                btn.className = (p === pct)
+                    ? 'px-2 py-1 rounded bg-amber-500 text-slate-950 text-[11px] font-black'
+                    : 'px-2 py-1 rounded bg-slate-800 text-[11px] font-bold text-slate-300';
+            });
+
+            const calc = getWaiterCollectTotals();
+            document.getElementById('wcol-subtotal').textContent = `$${calc.subtotal.toFixed(2)}`;
+            document.getElementById('wcol-tax').textContent = `$${calc.tax.toFixed(2)}`;
+            document.getElementById('wcol-tip-amount').textContent = `$${calc.tip.toFixed(2)}`;
+            document.getElementById('wcol-grand-total').textContent = `$${calc.grandTotal.toFixed(2)}`;
+            updateWaiterCollectMath();
+        }
+
+        function fillWaiterCollectMethod(method) {
+            const calc = getWaiterCollectTotals();
+            const totalStr = calc.grandTotal.toFixed(2);
+            document.getElementById('wcol-input-cash').value = method === 'CASH' ? totalStr : '0.00';
+            document.getElementById('wcol-input-yappy').value = method === 'YAPPY' ? totalStr : '0.00';
+            document.getElementById('wcol-input-card').value = method === 'CARD' ? totalStr : '0.00';
+            updateWaiterCollectMath();
+        }
+
+        function updateWaiterCollectMath() {
+            const calc = getWaiterCollectTotals();
+            const cashGiven = parseFloat(document.getElementById('wcol-input-cash').value) || 0;
+            const yappyGiven = parseFloat(document.getElementById('wcol-input-yappy').value) || 0;
+            const cardGiven = parseFloat(document.getElementById('wcol-input-card').value) || 0;
+
+            const totalReceived = cashGiven + yappyGiven + cardGiven;
+            const diff = totalReceived - calc.grandTotal;
+            const changeToClient = Math.max(0, diff);
+            const netCashForBox = Math.max(0, cashGiven - changeToClient);
+
+            const lblEl = document.getElementById('wcol-change-label');
+            const chgEl = document.getElementById('wcol-change-client');
+            const boxEl = document.getElementById('wcol-net-cash-to-box');
+
+            if (diff >= -0.01) {
+                lblEl.textContent = 'Vuelto a darle al cliente:';
+                chgEl.textContent = `$${changeToClient.toFixed(2)}`;
+                chgEl.className = 'font-mono font-black text-base text-emerald-400';
+            } else {
+                lblEl.textContent = 'Falta por cobrar al cliente:';
+                chgEl.textContent = `$${Math.abs(diff).toFixed(2)}`;
+                chgEl.className = 'font-mono font-black text-base text-rose-400';
+            }
+            boxEl.textContent = `$${netCashForBox.toFixed(2)}`;
+        }
+
+        function submitWaiterCollectionReportToCashier() {
+            const table = appState.tables.find(t => t.id === activeTableId);
+            if (!table || table.items.length === 0) return;
+
+            const calc = getWaiterCollectTotals();
+            const cashReceived = parseFloat(document.getElementById('wcol-input-cash').value) || 0;
+            const yappyAmount = parseFloat(document.getElementById('wcol-input-yappy').value) || 0;
+            const cardAmount = parseFloat(document.getElementById('wcol-input-card').value) || 0;
+            const refNote = document.getElementById('wcol-input-ref').value.trim();
+
+            const totalReceived = cashReceived + yappyAmount + cardAmount;
+            if (totalReceived + 0.01 < calc.grandTotal) {
+                showToast('El monto cobrado es menor al total de la cuenta.', 'danger');
+                return;
+            }
+
+            const changeGiven = Math.max(0, totalReceived - calc.grandTotal);
+            const netCashToDeliver = Math.max(0, cashReceived - changeGiven);
+            const waiterOwner = (table.waiter && table.waiter !== 'Por Asignar (QR)') ? table.waiter : activeWaiter;
+            table.waiter = waiterOwner;
+
+            if (!appState.waiterPendingRemittances) appState.waiterPendingRemittances = [];
+            // Replace if an existing remittance for this table was already pending
+            appState.waiterPendingRemittances = appState.waiterPendingRemittances.filter(r => r.tableId !== table.id);
+
+            const remitId = 'REM-' + Date.now().toString().slice(-4);
+            const methodsArr = [];
+            if (netCashToDeliver > 0) methodsArr.push(`Efectivo $${netCashToDeliver.toFixed(2)}`);
+            if (yappyAmount > 0) methodsArr.push(`Yappy $${yappyAmount.toFixed(2)}`);
+            if (cardAmount > 0) methodsArr.push(`Tarjeta $${cardAmount.toFixed(2)}`);
+
+            const remittanceRecord = {
+                id: remitId,
+                tableId: table.id,
+                tableName: table.name,
+                zone: table.zone,
+                waiter: waiterOwner,
+                subtotal: calc.subtotal,
+                tax: calc.tax,
+                tip: calc.tip,
+                grandTotal: calc.grandTotal,
+                cashReceivedFromClient: cashReceived,
+                changeGivenToClient: changeGiven,
+                netCashToDeliver: netCashToDeliver,
+                yappyAmount: yappyAmount,
+                cardAmount: cardAmount,
+                refNote: refNote,
+                methodsSummary: methodsArr.join(' + '),
+                createdAt: Date.now()
+            };
+
+            appState.waiterPendingRemittances.unshift(remittanceRecord);
+            table.pendingCashierApproval = remittanceRecord;
+
+            createPersistentNotification({
+                type: 'WAITER_REMITTANCE',
+                tableId: table.id,
+                tableName: table.name,
+                zone: table.zone,
+                waiter: waiterOwner,
+                title: `💵 COBRO DE SALONERO POR RECIBIR EN CAJA (${waiterOwner.toUpperCase()} - ${table.name.toUpperCase()})`,
+                message: `${waiterOwner} cobró $${calc.grandTotal.toFixed(2)} (${remittanceRecord.methodsSummary}). Caja debe recibir $${netCashToDeliver.toFixed(2)} en efectivo y aprobar.`,
+                targets: 'CAJA'
+            });
+
+            closeWaiterCollectModal();
+            renderComanderoOrderList();
+
+            const speechMsg = `Atención Caja. El salonero ${waiterOwner} reportó el cobro de ${table.name} por ${calc.grandTotal.toFixed(2)} dólares. Debe entregar ${netCashToDeliver.toFixed(2)} dólares en efectivo.`;
+            playBellSound('cash');
+            speakOrderEvent(speechMsg);
+            showToast(`✅ Cobro reportado a Caja. Entrega $${netCashToDeliver.toFixed(2)} en efectivo al Cajero para que libere la mesa de tu cuenta.`, 'success');
+            broadcastStateUpdate('cash', speechMsg);
+        }
+
+        function renderWaiterPendingRemittanceBanner() {
+            const banner = document.getElementById('waiter-pending-remittance-banner');
+            const titleEl = document.getElementById('waiter-remit-title');
+            const totalDueEl = document.getElementById('waiter-remit-total-due');
+            const listEl = document.getElementById('waiter-remit-cards-list');
+            const topBadge = document.getElementById('badge-top-waiter-remit');
+            if (!banner || !listEl) return;
+
+            const allRemits = appState.waiterPendingRemittances || [];
+            const myRemits = activeWaiter === 'Caja Principal'
+                ? allRemits
+                : allRemits.filter(r => r.waiter === activeWaiter);
+
+            const totalCashToHandIn = myRemits.reduce((sum, r) => sum + (Number(r.netCashToDeliver) || 0), 0);
+            const totalCollected = myRemits.reduce((sum, r) => sum + (Number(r.grandTotal) || 0), 0);
+
+            if (topBadge) {
+                topBadge.textContent = `$${totalCollected.toFixed(0)}`;
+            }
+
+            titleEl.textContent = `${activeWaiter}: Tienes ${myRemits.length} cuenta(s) cobrada(s) pendiente(s) de entregar en Caja`;
+            totalDueEl.textContent = `$${totalCashToHandIn.toFixed(2)} Efectivo (Total: $${totalCollected.toFixed(2)})`;
+
+            if (myRemits.length === 0) {
+                listEl.innerHTML = `
+                    <div class="col-span-full p-3 rounded-xl bg-slate-950/90 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-300">
+                        <span><i class="fa-solid fa-circle-check text-emerald-400 mr-1.5"></i>No tienes cobros pendientes de entregar a Caja con el usuario <strong>${activeWaiter}</strong>.</span>
+                        <span class="text-[11px] text-amber-300">Usa el botón verde <strong>"+ Cobrar una Mesa Ahora"</strong> cuando un cliente te pague en Efectivo, Yappy o Tarjeta.</span>
+                    </div>
+                `;
+                return;
+            }
+
+            listEl.innerHTML = myRemits.map(r => `
+                <div class="p-3 rounded-2xl bg-slate-950 border-2 border-amber-400/80 flex flex-col justify-between gap-2 shadow-lg">
+                    <div>
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="font-black text-white text-sm">${r.tableName}</span>
+                            <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-black text-[10px]">⏳ ESPERANDO A CAJA</span>
+                        </div>
+                        <p class="text-[11px] text-slate-300 mt-1">Total Cobrado al Cliente: <strong class="font-mono text-emerald-400">$${r.grandTotal.toFixed(2)}</strong></p>
+                        <div class="mt-1.5 p-2 rounded-xl bg-slate-900 border border-slate-800 text-[11px] space-y-0.5">
+                            <div class="flex justify-between"><span class="text-slate-400">💵 Entregar Efectivo a Caja:</span><strong class="font-mono text-amber-400">$${r.netCashToDeliver.toFixed(2)}</strong></div>
+                            ${r.yappyAmount > 0 ? `<div class="flex justify-between"><span class="text-slate-400">📱 Mostrar Yappy a Caja:</span><strong class="font-mono text-sky-400">$${r.yappyAmount.toFixed(2)}</strong></div>` : ''}
+                            ${r.cardAmount > 0 ? `<div class="flex justify-between"><span class="text-slate-400">💳 Entregar Voucher Tarjeta:</span><strong class="font-mono text-purple-400">$${r.cardAmount.toFixed(2)}</strong></div>` : ''}
+                        </div>
+                    </div>
+                    <div class="text-[10px] text-amber-300 font-bold flex items-center justify-between pt-1 border-t border-slate-800">
+                        <span><i class="fa-solid fa-lock mr-1"></i>No se borra hasta que Caja acepte</span>
+                        <button onclick="openComanderoModal(${r.tableId})" class="underline text-white hover:text-amber-300">Ver Mesa</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderCashierWaiterRemittancesBox() {
+            const box = document.getElementById('cashier-waiter-remittances-box');
+            const badge = document.getElementById('cashier-remit-count-badge');
+            const listEl = document.getElementById('cashier-remit-list');
+            if (!box || !listEl) return;
+
+            const remits = appState.waiterPendingRemittances || [];
+            badge.textContent = `${remits.length} cobro(s) por recibir`;
+
+            if (remits.length === 0) {
+                listEl.innerHTML = `
+                    <div class="col-span-full p-4 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-400 text-center">
+                        No hay cobros de saloneros pendientes de entregar en este momento. Cuando un salonero cobre una mesa en Efectivo, Yappy o Tarjeta, aparecerá aquí cuánto te tiene que dar.
+                    </div>
+                `;
+                return;
+            }
+
+            listEl.innerHTML = remits.map(r => `
+                <div class="p-4 rounded-2xl bg-slate-950 border-2 border-amber-400 shadow-xl flex flex-col justify-between gap-3">
+                    <div>
+                        <div class="flex items-center justify-between gap-2 border-b border-slate-800 pb-2">
+                            <div>
+                                <span class="px-2.5 py-0.5 rounded-lg bg-amber-400 text-slate-950 font-black text-xs uppercase">Salonero: ${r.waiter}</span>
+                                <h4 class="font-black text-white text-base mt-1">${r.tableName} <span class="text-xs text-slate-400 font-normal">(${r.zone})</span></h4>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-[10px] text-slate-400 block">Total Cuenta Cobrada</span>
+                                <span class="font-mono font-black text-lg text-emerald-400">$${r.grandTotal.toFixed(2)}</span>
+                            </div>
+                        </div>
+
+                        <!-- Lo que la Caja le tiene que pedir/recibir del Salonero -->
+                        <div class="mt-2.5 p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5 text-xs">
+                            <p class="text-[10px] font-black uppercase text-amber-300 tracking-wider"><i class="fa-solid fa-hand-holding-dollar mr-1"></i>LO QUE EL SALONERO (${r.waiter}) TE DEBE ENTREGAR AHORA:</p>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-300">💵 Efectivo físico a recibir en gaveta:</span>
+                                <span class="font-mono font-black text-base text-emerald-400">$${r.netCashToDeliver.toFixed(2)}</span>
+                            </div>
+                            ${r.changeGivenToClient > 0 ? `
+                                <div class="flex justify-between text-[11px] text-slate-400">
+                                    <span>(Cliente dio $${r.cashReceivedFromClient.toFixed(2)} en efectivo y el salonero dio $${r.changeGivenToClient.toFixed(2)} de vuelto)</span>
+                                </div>
+                            ` : ''}
+                            ${r.yappyAmount > 0 ? `
+                                <div class="flex justify-between items-center pt-1 border-t border-slate-800">
+                                    <span class="text-sky-300">📱 Verificar Comprobante Yappy/ACH:</span>
+                                    <span class="font-mono font-black text-sm text-sky-400">$${r.yappyAmount.toFixed(2)}</span>
+                                </div>
+                            ` : ''}
+                            ${r.cardAmount > 0 ? `
+                                <div class="flex justify-between items-center pt-1 border-t border-slate-800">
+                                    <span class="text-purple-300">💳 Recibir Voucher Punto de Venta Tarjeta:</span>
+                                    <span class="font-mono font-black text-sm text-purple-400">$${r.cardAmount.toFixed(2)}</span>
+                                </div>
+                            ` : ''}
+                            ${r.refNote ? `<p class="text-[11px] text-amber-300 pt-1"><i class="fa-solid fa-hashtag mr-1"></i>Ref Salonero: ${r.refNote}</p>` : ''}
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between gap-2 pt-1">
+                        <button onclick="rejectWaiterRemittance('${r.id}')" class="px-3 py-2.5 rounded-xl bg-rose-500/20 hover:bg-rose-500 text-rose-300 hover:text-white border border-rose-500/30 font-bold text-xs">
+                            <i class="fa-solid fa-rotate-left mr-1"></i> Devolver al Salonero
+                        </button>
+                        <button onclick="approveAndReceiveWaiterRemittance('${r.id}')" class="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-300 hover:to-teal-400 text-slate-950 font-black text-xs sm:text-sm shadow-lg flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-check-double"></i>
+                            <span>ACEPTAR, RECIBIR DINERO Y LIBERAR MESA</span>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function approveAndReceiveWaiterRemittance(remitId) {
+            const remit = (appState.waiterPendingRemittances || []).find(r => r.id === remitId);
+            if (!remit) return;
+
+            const table = appState.tables.find(t => t.id === remit.tableId);
+            const itemsList = table ? [...table.items] : [];
+
+            // Sumar a las métricas oficiales de Caja
+            appState.metrics.totalSales += remit.grandTotal;
+            appState.metrics.ordersPaid += 1;
+            appState.metrics.cashTotal += remit.netCashToDeliver;
+            appState.metrics.digitalTotal += remit.yappyAmount;
+            appState.metrics.cardTotal += remit.cardAmount;
+
+            const wName = remit.waiter || 'Salonero';
+            if (!appState.waiterStats) appState.waiterStats = {};
+            if (!appState.waiterStats[wName]) appState.waiterStats[wName] = { sales: 0, tips: 0, orders: 0 };
+            appState.waiterStats[wName].sales += remit.grandTotal;
+            appState.waiterStats[wName].tips += remit.tip;
+            appState.waiterStats[wName].orders += 1;
+
+            let methodDesc = [];
+            if (remit.netCashToDeliver > 0) methodDesc.push('Efectivo');
+            if (remit.yappyAmount > 0) methodDesc.push('Yappy/ACH');
+            if (remit.cardAmount > 0) methodDesc.push('Tarjeta');
+
+            const nowTimeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const itemsSummaryText = itemsList.map(i => `1x ${i.name}`).join(', ');
+
+            appState.recentTransactions.unshift({
+                id: 'FAC-' + (105 + appState.metrics.ordersPaid),
+                table: remit.tableName,
+                zone: remit.zone,
+                waiter: wName,
+                itemsSummary: itemsSummaryText + (remit.refNote ? ` [Ref: ${remit.refNote}]` : ''),
+                total: remit.grandTotal,
+                method: methodDesc.join('+') || 'Efectivo',
+                time: nowTimeStr
+            });
+
+            if (table) {
+                generateThermalReceipt(table, 'FACTURA DE PAGO (RENDICIÓN SALONERO)', {
+                    items: itemsList,
+                    subtotal: remit.subtotal,
+                    tax: remit.tax,
+                    tip: remit.tip,
+                    grandTotal: remit.grandTotal,
+                    tendered: remit.cashReceivedFromClient + remit.yappyAmount + remit.cardAmount,
+                    change: remit.changeGivenToClient,
+                    methods: `${methodDesc.join(' + ')} (Cobrado por ${wName})`
+                });
+
+                // Ahora sí se libera la mesa y se borra de la cuenta del salonero
+                table.items = [];
+                table.status = 'LIBRE';
+                table.openedAt = null;
+                table.waiter = '';
+                table.prebillRequested = false;
+                table.pendingCashierApproval = null;
+                if (table.zone === 'Para Llevar' || table.shape === 'TAKEOUT') {
+                    table.customerName = '';
+                    table.customerPhone = '';
+                    table.customerAddress = '';
+                }
+            }
+
+            // Quitar de pendientes de rendición y limpiar alerta
+            appState.waiterPendingRemittances = (appState.waiterPendingRemittances || []).filter(r => r.id !== remitId);
+            appState.persistentNotifications = (appState.persistentNotifications || []).filter(
+                n => !(n.type === 'WAITER_REMITTANCE' && n.tableId === remit.tableId)
+            );
+
+            const speechOk = `Caja recibió y procesó el cobro de ${remit.tableName} del salonero ${wName}. Cuenta liberada.`;
+            playBellSound('cash');
+            speakOrderEvent(speechOk);
+            showToast(`✅ Dinero recibido de ${wName} ($${remit.grandTotal.toFixed(2)}). ${remit.tableName} procesada y liberada.`, 'success');
+            broadcastStateUpdate('cash', speechOk);
+        }
+
+        function rejectWaiterRemittance(remitId) {
+            const remit = (appState.waiterPendingRemittances || []).find(r => r.id === remitId);
+            if (!remit) return;
+            const table = appState.tables.find(t => t.id === remit.tableId);
+            if (table) {
+                table.pendingCashierApproval = null;
+            }
+            appState.waiterPendingRemittances = (appState.waiterPendingRemittances || []).filter(r => r.id !== remitId);
+            appState.persistentNotifications = (appState.persistentNotifications || []).filter(
+                n => !(n.type === 'WAITER_REMITTANCE' && n.tableId === remit.tableId)
+            );
+            showToast(`Cobro de ${remit.tableName} devuelto al salonero ${remit.waiter} para corrección.`, 'warning');
             broadcastStateUpdate();
         }
 
@@ -4352,6 +5195,8 @@
          * 8. VISTA 4: CAJA CENTRAL, SPLIT BILL (DIVISIÓN) Y PAGOS MIXTOS
          ***********************************************************************/
         function renderCashierView() {
+            renderCashierWaiterRemittancesBox();
+
             // Calculate Open Balances
             let openBalance = 0;
             const occupiedTables = appState.tables.filter(t => t.items.length > 0);
@@ -4379,8 +5224,9 @@
                     return `
                         <div onclick="selectTableForCashier(${t.id})" class="p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${isSelected ? 'bg-amber-500/15 border-amber-500' : 'bg-slate-950 border-slate-800 hover:border-slate-700'}">
                             <div>
-                                <div class="flex items-center gap-2">
+                                <div class="flex items-center gap-2 flex-wrap">
                                     <span class="font-extrabold text-sm text-white">${t.name}</span>
+                                    ${t.pendingCashierApproval ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 font-black animate-pulse">💵 SALONERO COBRÓ (POR RECIBIR)</span>` : ''}
                                     ${t.prebillRequested ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-sky-500 text-slate-950 font-black">PIDIÓ CUENTA</span>` : ''}
                                 </div>
                                 <p class="text-[11px] text-slate-400">${t.zone} • Salonero: ${t.waiter || 'General'}</p>
@@ -4913,6 +5759,201 @@
             showToast('📊 Archivo Excel (.CSV) descargado correctamente.', 'success');
         }
 
+        /***********************************************************************
+         * 8.6 MÓDULO DE PEDIDOS EN CURSO (MESERO / QR / DELIVERY) + HISTORIAL
+         ***********************************************************************/
+        function getActiveOrdersDataList() {
+            const activeTables = (appState.tables || []).filter(t => !t.isSpacer && t.items && t.items.length > 0);
+            return activeTables.map(t => {
+                const isDeliveryOrTakeout = t.zone === 'Para Llevar' || t.shape === 'TAKEOUT';
+                const hasQrItems = t.items.some(i => (i.seat && i.seat.includes('QR')) || (i.note && i.note.includes('QR')));
+                let originType = 'MESERO';
+                let originBadge = '<span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-black">👤 MESERO</span>';
+
+                if (isDeliveryOrTakeout) {
+                    originType = 'DELIVERY';
+                    originBadge = `<span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-black">${t.deliveryType === 'DELIVERY' ? '🛵 DELIVERY' : '🛍️ PARA LLEVAR'}</span>`;
+                } else if (hasQrItems) {
+                    originType = 'QR';
+                    originBadge = '<span class="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-[10px] font-black">📲 PEDIDO QR</span>';
+                }
+
+                const totals = calculateTableTotals(t);
+                const readyCount = t.items.filter(i => i.status === 'READY').length;
+                const preparingCount = t.items.filter(i => i.status === 'SENT' || i.status === 'PREPARING').length;
+                const deliveredCount = t.items.filter(i => i.status === 'DELIVERED').length;
+
+                return {
+                    table: t,
+                    originType,
+                    originBadge,
+                    totals,
+                    readyCount,
+                    preparingCount,
+                    deliveredCount,
+                    elapsedMins: getElapsedMinutes(t.openedAt)
+                };
+            });
+        }
+
+        function updateLiveOrdersTopBadge() {
+            const badge = document.getElementById('badge-live-orders-count');
+            const activeList = getActiveOrdersDataList();
+            if (badge) {
+                badge.textContent = activeList.length;
+            }
+            const activePill = document.getElementById('modal-live-count-pill');
+            const historyPill = document.getElementById('modal-history-count-pill');
+            if (activePill) activePill.textContent = activeList.length;
+            if (historyPill) historyPill.textContent = (appState.recentTransactions || []).length;
+        }
+
+        function openLiveOrdersAndHistoryModal(defaultTab = 'ACTIVE') {
+            liveOrdersModalTab = defaultTab;
+            document.getElementById('modal-live-orders-history').classList.remove('hidden');
+            switchLiveOrdersModalTab(defaultTab);
+        }
+
+        function closeLiveOrdersAndHistoryModal() {
+            document.getElementById('modal-live-orders-history').classList.add('hidden');
+        }
+
+        function switchLiveOrdersModalTab(tab) {
+            liveOrdersModalTab = tab;
+            const btnActive = document.getElementById('tab-modal-live-active');
+            const btnHistory = document.getElementById('tab-modal-live-history');
+            const filterBar = document.getElementById('live-orders-filter-bar');
+            const activeContainer = document.getElementById('live-orders-active-container');
+            const historyContainer = document.getElementById('live-orders-history-container');
+
+            if (tab === 'ACTIVE') {
+                btnActive.className = 'px-3.5 py-2 rounded-lg text-xs font-black bg-amber-500 text-slate-950 transition-all';
+                btnHistory.className = 'px-3.5 py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-all';
+                filterBar.classList.remove('hidden');
+                activeContainer.classList.remove('hidden');
+                historyContainer.classList.add('hidden');
+            } else {
+                btnHistory.className = 'px-3.5 py-2 rounded-lg text-xs font-black bg-amber-500 text-slate-950 transition-all';
+                btnActive.className = 'px-3.5 py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-all';
+                filterBar.classList.add('hidden');
+                activeContainer.classList.add('hidden');
+                historyContainer.classList.remove('hidden');
+            }
+            renderLiveOrdersAndHistoryModal();
+        }
+
+        function setLiveOrdersOriginFilter(origin) {
+            liveOrdersOriginFilter = origin;
+            ['ALL', 'MESERO', 'QR', 'DELIVERY'].forEach(k => {
+                const b = document.getElementById(`flt-origin-${k}`);
+                if (!b) return;
+                b.className = (k === origin)
+                    ? 'px-3 py-1.5 rounded-xl font-black bg-amber-500 text-slate-950'
+                    : 'px-3 py-1.5 rounded-xl font-bold bg-slate-800 text-slate-300';
+            });
+            renderLiveOrdersAndHistoryModal();
+        }
+
+        function renderLiveOrdersAndHistoryModal() {
+            updateLiveOrdersTopBadge();
+            const activeContainer = document.getElementById('live-orders-active-container');
+            const historyContainer = document.getElementById('live-orders-history-container');
+            if (!activeContainer || !historyContainer) return;
+
+            // 1. Renderizar Pedidos en Curso
+            const allActive = getActiveOrdersDataList();
+            const filteredActive = liveOrdersOriginFilter === 'ALL'
+                ? allActive
+                : allActive.filter(o => o.originType === liveOrdersOriginFilter);
+
+            if (filteredActive.length === 0) {
+                activeContainer.innerHTML = `
+                    <div class="col-span-full p-10 text-center bg-slate-950 rounded-2xl border border-slate-800 text-slate-500">
+                        <i class="fa-solid fa-mug-hot text-3xl mb-2 text-slate-600"></i>
+                        <p class="font-bold text-sm text-slate-300">No hay pedidos en curso en esta categoría</p>
+                        <p class="text-xs mt-1">Todos los pedidos registrados por mesero, QR o Delivery aparecerán aquí hasta que se cobren.</p>
+                    </div>
+                `;
+            } else {
+                activeContainer.innerHTML = filteredActive.map(entry => {
+                    const t = entry.table;
+                    return `
+                        <div class="p-4 rounded-2xl bg-slate-950 border-2 ${entry.readyCount > 0 ? 'border-emerald-400' : 'border-slate-800'} flex flex-col justify-between gap-3 shadow-lg">
+                            <div>
+                                <div class="flex items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <span class="font-black text-white text-base">${t.name}</span>
+                                        ${entry.originBadge}
+                                        <span class="text-[11px] font-mono text-slate-400"><i class="fa-regular fa-clock mr-1"></i>${entry.elapsedMins}m</span>
+                                    </div>
+                                    <span class="font-mono font-black text-base text-emerald-400">$${entry.totals.totalWithTax.toFixed(2)}</span>
+                                </div>
+
+                                <div class="flex items-center justify-between text-xs mt-2 text-slate-300">
+                                    <span><i class="fa-solid fa-user-tie text-amber-400 mr-1"></i>Mesero Asignado: <strong class="text-white">${t.waiter || 'Sin asignar'}</strong></span>
+                                    <span class="text-[11px] text-slate-400">${t.zone}</span>
+                                </div>
+
+                                ${t.customerName ? `
+                                    <div class="mt-1.5 px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-emerald-300">
+                                        <i class="fa-solid fa-user mr-1"></i><strong>${t.customerName}</strong> ${t.customerPhone ? `• 📞 ${t.customerPhone}` : ''} ${t.customerAddress ? `• 📍 ${t.customerAddress}` : ''}
+                                    </div>
+                                ` : ''}
+
+                                <div class="mt-2.5 space-y-1 max-h-36 overflow-y-auto pr-1">
+                                    ${t.items.map(it => {
+                                        let stPill = `<span class="text-[10px] px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-300 font-bold">En ${it.station}</span>`;
+                                        if (it.status === 'READY') stPill = `<span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-400 text-slate-950 font-black animate-pulse">¡LISTO!</span>`;
+                                        else if (it.status === 'DELIVERED') stPill = `<span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-emerald-400 font-bold">✓ Entregado</span>`;
+                                        return `
+                                            <div class="flex items-center justify-between text-xs bg-slate-900/90 px-2.5 py-1.5 rounded-lg border border-slate-800/80">
+                                                <span class="font-bold text-white truncate pr-2">1x ${it.name} <span class="text-[10px] text-amber-400">(${it.seat})</span></span>
+                                                ${stPill}
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            </div>
+
+                            <div class="pt-2 border-t border-slate-800 flex items-center justify-between gap-2">
+                                <button onclick="closeLiveOrdersAndHistoryModal(); openComanderoModal(${t.id});" class="flex-1 py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs">
+                                    <i class="fa-solid fa-utensils mr-1 text-amber-400"></i> Ver / Agregar Productos
+                                </button>
+                                <button onclick="closeLiveOrdersAndHistoryModal(); selectTableForCashier(${t.id}); switchStation('CAJA');" class="py-2 px-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs">
+                                    <i class="fa-solid fa-cash-register mr-1"></i> Ir a Cobrar
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // 2. Renderizar Historial de Pedidos Cobrados
+            const historyList = appState.recentTransactions || [];
+            if (historyList.length === 0) {
+                historyContainer.innerHTML = `<p class="text-center text-slate-500 py-8 text-xs">Aún no hay facturas cobradas en el historial de hoy.</p>`;
+            } else {
+                historyContainer.innerHTML = historyList.map(tx => `
+                    <div class="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                        <div>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="font-mono font-black text-amber-400 text-sm">${tx.id}</span>
+                                <span class="font-black text-white text-sm">${tx.table}</span>
+                                <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-bold text-[10px]">${tx.zone || 'Local'}</span>
+                                <span class="text-slate-400">• Atendió: <strong class="text-emerald-300">${tx.waiter || 'General'}</strong></span>
+                                <span class="text-slate-500 font-mono text-[11px]"><i class="fa-regular fa-clock mr-1"></i>${tx.time || 'Hoy'}</span>
+                            </div>
+                            <p class="text-slate-300 mt-1">${tx.itemsSummary || 'Consumo en local'}</p>
+                        </div>
+                        <div class="flex items-center gap-3 shrink-0">
+                            <span class="px-2.5 py-1 rounded-lg bg-sky-500/15 text-sky-300 border border-sky-500/30 font-bold">${tx.method}</span>
+                            <span class="font-mono font-black text-base text-emerald-400">$${Number(tx.total).toFixed(2)}</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
         function openTableComanderoFromCashier() {
             if (cashierTableId) openComanderoModal(cashierTableId);
         }
@@ -5129,6 +6170,9 @@
             renderAdminReports();
             renderAdminSalesHistory();
             renderAdminQrManager();
+            if (typeof renderAdminDeviceLinks === 'function') {
+                renderAdminDeviceLinks();
+            }
             if (typeof renderAdminCloudAndVoice === 'function') {
                 renderAdminCloudAndVoice();
             }
@@ -6307,7 +7351,7 @@
 
             if (!table.openedAt) {
                 table.openedAt = now;
-                table.waiter = 'Autopedido QR';
+                table.waiter = 'Por Asignar (QR)';
             }
             table.status = 'OCUPADA';
 
@@ -6357,6 +7401,7 @@
                 tableName: table.name,
                 zone: table.zone,
                 customerName: customerName || 'Cliente en Mesa',
+                assignedWaiter: table.waiter && table.waiter !== 'Por Asignar (QR)' ? table.waiter : '',
                 note: customNote || '',
                 items: qrCustomerCart.map(i => ({ name: i.name, price: i.price, station: i.station })),
                 totalWithTax: qrTotalWithTax,
@@ -6366,16 +7411,16 @@
                 lastReminderAt: 0
             });
 
-            // Crear Notificación Persistente para que no desaparezca hasta que el personal la acepte
-            const aCfg = appState.alertSettings || { targetQrOrders: 'TODAS' };
+            // El pedido QR entrante le sale EXCLUSIVAMENTE al Cajero para que lo revise y se lo asigne a un mesero
             createPersistentNotification({
                 type: 'QR_ORDER',
                 tableId: table.id,
                 tableName: table.name,
                 zone: table.zone,
-                title: `📲 ¡NUEVO PEDIDO POR QR EN ${table.name.toUpperCase()}!`,
-                message: `${seatLabel} pidió: ${summaryText} • Total: $${qrTotalWithTax.toFixed(2)}`,
-                targets: aCfg.targetQrOrders || 'TODAS',
+                waiter: '',
+                title: `📲 ¡NUEVO PEDIDO POR QR EN ${table.name.toUpperCase()} (EXCLUSIVO CAJA)!`,
+                message: `${seatLabel} pidió: ${summaryText} • Total: $${qrTotalWithTax.toFixed(2)}. Asígnalo a un mesero desde aquí.`,
+                targets: 'CAJA',
                 qrOrderId: qrOrderId
             });
 
@@ -6404,19 +7449,19 @@
             const table = appState.tables.find(t => t.id === qrPortalTableId);
             if (!table) return;
             const customerName = document.getElementById('qr-customer-seat-name')?.value.trim() || 'Cliente';
-            const aCfg = appState.alertSettings || { targetCalls: 'TODAS' };
 
             createPersistentNotification({
                 type: 'CALL_WAITER',
                 tableId: table.id,
                 tableName: table.name,
                 zone: table.zone,
-                title: `🛎️ ¡LLAMADO DE SALONERO EN ${table.name.toUpperCase()}!`,
-                message: `${customerName} solicita presencia del salonero en ${table.name} (${table.zone}).`,
-                targets: aCfg.targetCalls || 'TODAS'
+                waiter: table.waiter || '',
+                title: `🛎️ ¡LLAMADO DE MESERO EN ${table.name.toUpperCase()}!`,
+                message: `${customerName} solicita a su mesero (${table.waiter || 'Sin asignar'}) en ${table.name} (${table.zone}).`,
+                targets: 'MESAS,CAJA'
             });
 
-            const callSpeech = `Atención saloneros. El cliente en ${table.name}, ${table.zone}, solicita atención en su mesa.`;
+            const callSpeech = `Atención ${table.waiter || 'saloneros'}. El cliente en ${table.name} solicita atención en su mesa.`;
             playBellSound('new_order');
             speakOrderEvent(callSpeech);
             closeCustomerQrPortal();
@@ -6429,19 +7474,19 @@
             if (!table) return;
             table.prebillRequested = true;
             const totals = calculateTableTotals(table);
-            const aCfg = appState.alertSettings || { targetCalls: 'TODAS' };
 
             createPersistentNotification({
                 type: 'REQUEST_BILL',
                 tableId: table.id,
                 tableName: table.name,
                 zone: table.zone,
+                waiter: table.waiter || '',
                 title: `💳 ¡SOLICITUD DE CUENTA EN ${table.name.toUpperCase()}!`,
-                message: `El cliente pidió la cuenta desde el menú QR. Total acumulado con ITBMS: $${totals.totalWithTax.toFixed(2)}`,
-                targets: aCfg.targetCalls || 'TODAS'
+                message: `El cliente pidió la cuenta desde el menú QR (Mesero: ${table.waiter || 'Caja'}). Total con ITBMS: $${totals.totalWithTax.toFixed(2)}`,
+                targets: 'MESAS,CAJA'
             });
 
-            const billSpeech = `Atención Caja y Saloneros. El cliente en ${table.name} solicitó la cuenta por ${totals.totalWithTax.toFixed(2)} dólares.`;
+            const billSpeech = `Atención Caja y ${table.waiter || 'saloneros'}. El cliente en ${table.name} solicitó la cuenta por ${totals.totalWithTax.toFixed(2)} dólares.`;
             playBellSound('new_order');
             speakOrderEvent(billSpeech);
             closeCustomerQrPortal();
@@ -6463,14 +7508,47 @@
             broadcastStateUpdate();
         }
 
-        function shouldShowAlertOnCurrentStation(targetsStr) {
-            if (!targetsStr || targetsStr === 'TODAS') return true;
-            if (currentStation === 'ADMIN') return true; // El Admin siempre supervisa todo
+        function shouldShowAlertOnCurrentStation(notif) {
+            if (!notif) return false;
+            const targetsStr = notif.targets || 'TODAS';
+            const isCashierUser = (currentStation === 'CAJA' || activeWaiter === 'Caja Principal');
+
+            // 1. El pedido por QR nuevo SOLO le sale al Cajero (y Admin), nunca mezclado en la pantalla de los meseros
+            if (notif.type === 'QR_ORDER' || notif.type === 'WAITER_REMITTANCE') {
+                return currentStation === 'CAJA' || currentStation === 'ADMIN' || activeWaiter === 'Caja Principal';
+            }
+
+            // 2. Si el Cajero le asignó un pedido QR a un mesero específico, solo le sale a ese mesero
+            if (notif.type === 'QR_ASSIGNED_WAITER') {
+                if (currentStation === 'CAJA' || currentStation === 'ADMIN') return true;
+                return currentStation === 'MESAS' && (!notif.waiter || notif.waiter === activeWaiter);
+            }
+
+            // 3. Recordatorio de demora en llevar comida: le sale a la Caja y al Mesero único dueño de esa mesa
+            if (notif.type === 'OVERDUE_REMINDER') {
+                if (currentStation === 'CAJA' || currentStation === 'ADMIN' || isCashierUser) return true;
+                if (currentStation === 'MESAS') {
+                    return !notif.waiter || notif.waiter === 'Por Asignar (QR)' || notif.waiter === activeWaiter;
+                }
+                return false;
+            }
+
+            // 4. Llamado de mesero o pedir cuenta: solo al mesero de esa mesa y a Caja
+            if (notif.type === 'CALL_WAITER' || notif.type === 'REQUEST_BILL') {
+                if (currentStation === 'CAJA' || currentStation === 'ADMIN' || isCashierUser) return true;
+                if (currentStation === 'MESAS') {
+                    return !notif.waiter || notif.waiter === 'Por Asignar (QR)' || notif.waiter === activeWaiter;
+                }
+                return false;
+            }
+
+            if (currentStation === 'ADMIN') return true;
+            if (targetsStr === 'TODAS') return true;
             const list = targetsStr.split(',').map(s => s.trim());
             return list.includes(currentStation);
         }
 
-        function createPersistentNotification({ type, tableId, tableName, zone, title, message, targets = 'TODAS', qrOrderId = null }) {
+        function createPersistentNotification({ type, tableId, tableName, zone, waiter = '', title, message, targets = 'TODAS', qrOrderId = null }) {
             if (!appState.persistentNotifications) appState.persistentNotifications = [];
             appState.persistentNotifications.unshift({
                 id: 'pnotif_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
@@ -6478,6 +7556,7 @@
                 tableId,
                 tableName,
                 zone,
+                waiter,
                 title,
                 message,
                 createdAt: Date.now(),
@@ -6486,10 +7565,63 @@
             });
         }
 
+        function assignQrClientToWaiter(qrOrderId, tableId, waiterName, notifId = null) {
+            if (!waiterName) {
+                showToast('Selecciona un mesero para asignarle el cliente QR.', 'warning');
+                return;
+            }
+            const table = appState.tables.find(t => t.id === Number(tableId));
+            if (table) {
+                table.waiter = waiterName;
+            }
+            const qrOrd = (appState.qrOrdersLog || []).find(o => o.id === qrOrderId);
+            if (qrOrd) {
+                qrOrd.assignedWaiter = waiterName;
+                qrOrd.acceptedByStaff = true;
+            }
+            if (notifId) {
+                appState.persistentNotifications = (appState.persistentNotifications || []).filter(n => n.id !== notifId);
+            }
+
+            // Enviar alerta directa al mesero asignado para que lleve el pedido QR a esa mesa
+            createPersistentNotification({
+                type: 'QR_ASSIGNED_WAITER',
+                tableId: Number(tableId),
+                tableName: table ? table.name : `Mesa ${tableId}`,
+                zone: table ? table.zone : 'Salón',
+                waiter: waiterName,
+                title: `🏃‍♂️ PEDIDO QR ASIGNADO A TI (${waiterName.toUpperCase()}) - ${table ? table.name.toUpperCase() : ''}`,
+                message: `Caja te asignó el cliente QR de ${table ? table.name : 'Mesa'}. Atiende la mesa y lleva su pedido cuando salga de Cocina/Barra.`,
+                targets: 'MESAS',
+                qrOrderId: qrOrderId
+            });
+
+            const assignSpeech = `Atención mesero ${waiterName}. Caja te asignó el pedido por código Q R de ${table ? table.name : 'la mesa'}.`;
+            playBellSound('chime');
+            speakOrderEvent(assignSpeech);
+            showToast(`✅ Cliente QR de ${table ? table.name : 'Mesa'} asignado al mesero ${waiterName}.`, 'success');
+            if (!document.getElementById('modal-qr-orders-hub').classList.contains('hidden')) {
+                renderQrOrdersHubList();
+            }
+            broadcastStateUpdate('chime', assignSpeech);
+        }
+
         function renderPersistentAlertsDock() {
             const dock = document.getElementById('persistent-alerts-dock');
             const badgeHub = document.getElementById('badge-qr-hub-count');
+            const topQrBtn = document.getElementById('btn-top-qr-hub');
             const pendingQrOrdersCount = (appState.qrOrdersLog || []).filter(o => !o.deliveredAt).length;
+
+            // El botón superior de "Pedidos QR (Caja)" SOLO se muestra cuando está en Caja o Admin
+            if (topQrBtn) {
+                if (currentStation === 'CAJA' || currentStation === 'ADMIN' || activeWaiter === 'Caja Principal') {
+                    topQrBtn.classList.remove('hidden');
+                    topQrBtn.classList.add('flex');
+                } else {
+                    topQrBtn.classList.add('hidden');
+                    topQrBtn.classList.remove('flex');
+                }
+            }
 
             if (badgeHub) {
                 badgeHub.textContent = pendingQrOrdersCount;
@@ -6500,7 +7632,7 @@
             if (!dock) return;
 
             const allAlerts = appState.persistentNotifications || [];
-            const visibleAlerts = allAlerts.filter(n => shouldShowAlertOnCurrentStation(n.targets));
+            const visibleAlerts = allAlerts.filter(n => shouldShowAlertOnCurrentStation(n));
 
             if (visibleAlerts.length === 0) {
                 dock.classList.add('hidden');
@@ -6525,12 +7657,22 @@
                     styleClasses = 'from-cyan-950/95 via-slate-900 to-slate-900 border-cyan-400';
                     badgeColor = 'bg-cyan-400 text-slate-950';
                     iconClass = 'fa-mobile-retro';
-                    typeLabel = 'NUEVO PEDIDO POR QR';
+                    typeLabel = 'NUEVO PEDIDO QR (EXCLUSIVO CAJA)';
+                } else if (notif.type === 'WAITER_REMITTANCE') {
+                    styleClasses = 'from-amber-950/95 via-slate-900 to-emerald-950/90 border-amber-400';
+                    badgeColor = 'bg-amber-400 text-slate-950';
+                    iconClass = 'fa-hand-holding-dollar';
+                    typeLabel = `RENDICIÓN DE SALONERO: ${notif.waiter}`;
+                } else if (notif.type === 'QR_ASSIGNED_WAITER') {
+                    styleClasses = 'from-emerald-950/95 via-slate-900 to-slate-900 border-emerald-400';
+                    badgeColor = 'bg-emerald-400 text-slate-950';
+                    iconClass = 'fa-user-check';
+                    typeLabel = `ASIGNADO A MESERO: ${notif.waiter || activeWaiter}`;
                 } else if (notif.type === 'OVERDUE_REMINDER') {
                     styleClasses = 'from-rose-950 via-red-950/90 to-slate-900 border-rose-500 new-order-flash';
                     badgeColor = 'bg-rose-500 text-white';
                     iconClass = 'fa-stopwatch';
-                    typeLabel = '⏰ RECORDATORIO: PEDIDO NO ENTREGADO A TIEMPO';
+                    typeLabel = `⏰ DEMORA EN LLEVAR COMIDA (MESERO: ${notif.waiter || 'SIN ASIGNAR'} + CAJA)`;
                 }
 
                 return `
@@ -6543,7 +7685,7 @@
                                 <div class="flex items-center gap-2 flex-wrap">
                                     <span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded ${badgeColor}">${typeLabel}</span>
                                     <span class="text-[11px] font-mono font-bold text-slate-300"><i class="fa-regular fa-clock mr-1"></i>Hace ${elapsedMins} min</span>
-                                    <span class="text-[10px] px-2 py-0.5 rounded bg-slate-950/80 text-slate-400 border border-slate-800">Visible en: ${notif.targets}</span>
+                                    ${notif.waiter ? `<span class="text-[10px] px-2 py-0.5 rounded bg-slate-950 text-amber-300 border border-amber-500/30 font-bold">Mesero: ${notif.waiter}</span>` : ''}
                                 </div>
                                 <h4 class="font-black text-white text-sm sm:text-base mt-1">${notif.title}</h4>
                                 <p class="text-xs text-slate-200 font-medium">${notif.message}</p>
@@ -6555,13 +7697,18 @@
                                 <i class="fa-solid fa-volume-high"></i>
                             </button>
                             ${notif.type === 'QR_ORDER' ? `
-                                <button onclick="acceptQrOrderAndOpenHub('${notif.id}', '${notif.qrOrderId || ''}')" class="px-4 py-2.5 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-black text-xs shadow-lg flex items-center gap-1.5">
-                                    <i class="fa-solid fa-list-check"></i> Aceptar y Ver en Pedidos QR
-                                </button>
+                                <div class="flex items-center gap-1.5 bg-slate-950 p-1.5 rounded-xl border border-cyan-500/40">
+                                    <select id="assign-waiter-sel-${notif.id}" class="bg-slate-900 text-white text-xs font-bold rounded-lg px-2 py-1.5 border border-slate-700">
+                                        ${getWaitersList().map(w => `<option value="${w}">${w}</option>`).join('')}
+                                    </select>
+                                    <button onclick="assignQrClientToWaiter('${notif.qrOrderId || ''}', ${notif.tableId}, document.getElementById('assign-waiter-sel-${notif.id}').value, '${notif.id}')" class="px-3 py-1.5 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-black text-xs shadow">
+                                        <i class="fa-solid fa-user-plus mr-1"></i>Asignar Mesero
+                                    </button>
+                                </div>
                             ` : ''}
-                            ${notif.type === 'REQUEST_BILL' ? `
+                            ${notif.type === 'REQUEST_BILL' || notif.type === 'WAITER_REMITTANCE' ? `
                                 <button onclick="attendBillAlertInCashier('${notif.id}', ${notif.tableId})" class="px-4 py-2.5 rounded-xl bg-sky-400 hover:bg-sky-300 text-slate-950 font-black text-xs shadow-lg flex items-center gap-1.5">
-                                    <i class="fa-solid fa-cash-register"></i> Ir a Cobrar / Precuenta
+                                    <i class="fa-solid fa-cash-register"></i> Ir a Caja a Recibir
                                 </button>
                             ` : ''}
                             <button onclick="openTableFromPersistentAlert('${notif.id}', ${notif.tableId})" class="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs border border-slate-700">
@@ -6667,6 +7814,9 @@
                                 <span class="font-black text-white text-base">${ord.tableName}</span>
                                 <span class="text-xs text-amber-400 font-bold">(${ord.zone})</span>
                                 <span class="text-xs text-slate-400">• Cliente: <strong class="text-white">${ord.customerName}</strong></span>
+                                <span class="text-xs px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-emerald-300 font-bold">
+                                    Mesero Asignado: ${ord.assignedWaiter || '⚠️ Sin asignar'}
+                                </span>
                                 ${statusBadge}
                             </div>
 
@@ -6681,13 +7831,24 @@
                             ${ord.note ? `<p class="text-xs text-amber-300 font-semibold"><i class="fa-solid fa-comment-dots mr-1"></i>Nota del cliente: ${ord.note}</p>` : ''}
                         </div>
 
-                        <div class="flex flex-row md:flex-col items-center md:items-end justify-between gap-2 shrink-0 border-t md:border-t-0 pt-2 md:pt-0 border-slate-800">
-                            <div class="text-right">
-                                <span class="text-[10px] text-slate-400 block">Total Pedido QR</span>
+                        <div class="flex flex-col items-stretch md:items-end justify-between gap-2 shrink-0 border-t md:border-t-0 pt-2 md:pt-0 border-slate-800">
+                            <div class="flex items-center justify-between md:justify-end gap-3">
+                                <span class="text-[10px] text-slate-400">Total Pedido QR:</span>
                                 <span class="font-mono font-black text-lg text-emerald-400">$${Number(ord.totalWithTax || 0).toFixed(2)}</span>
                             </div>
 
-                            <div class="flex items-center gap-2">
+                            <!-- Asignar cliente de QR a un mesero desde Caja -->
+                            <div class="flex items-center gap-1.5 bg-slate-900 p-1.5 rounded-xl border border-cyan-500/40">
+                                <span class="text-[10px] font-bold text-cyan-300 pl-1">Asignar a:</span>
+                                <select id="hub-assign-waiter-${ord.id}" class="bg-slate-950 text-white text-xs font-bold rounded-lg px-2 py-1 border border-slate-700">
+                                    ${getWaitersList().map(w => `<option value="${w}" ${ord.assignedWaiter === w ? 'selected' : ''}>${w}</option>`).join('')}
+                                </select>
+                                <button onclick="assignQrClientToWaiter('${ord.id}', ${ord.tableId}, document.getElementById('hub-assign-waiter-${ord.id}').value)" class="px-2.5 py-1 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-black text-xs">
+                                    Asignar
+                                </button>
+                            </div>
+
+                            <div class="flex items-center gap-2 justify-end">
                                 <button onclick="closeQrOrdersHubModal(); openComanderoModal(${ord.tableId});" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold border border-slate-700">
                                     Ver Mesa
                                 </button>
@@ -6745,14 +7906,16 @@
                         n => n.type === 'OVERDUE_REMINDER' && n.tableId === table.id
                     );
                     if (!existingAlert) {
+                        const tableWaiter = table.waiter || 'Sin asignar';
                         createPersistentNotification({
                             type: 'OVERDUE_REMINDER',
                             tableId: table.id,
                             tableName: table.name,
                             zone: table.zone,
-                            title: `⏰ ¡DEMORA DE ${elapsedMins} MIN EN ${table.name.toUpperCase()} SIN ENTREGAR!`,
-                            message: `Tiene ${undelivered.length} producto(s) pendientes de entrega (${undelivered.map(u => u.name).slice(0, 2).join(', ')}). Tiempo límite configurado: ${maxMins} min.`,
-                            targets: aCfg.targetOverdue || 'TODAS'
+                            waiter: tableWaiter,
+                            title: `⏰ ¡DEMORA DE ${elapsedMins} MIN EN ${table.name.toUpperCase()} (MESERO: ${tableWaiter.toUpperCase()})!`,
+                            message: `Tiene ${undelivered.length} producto(s) sin llevar a la mesa (${undelivered.map(u => u.name).slice(0, 2).join(', ')}). Alerta visible para ${tableWaiter} y Caja Principal.`,
+                            targets: 'MESAS,CAJA'
                         });
                         triggeredNewAlert = true;
                     }
@@ -6760,7 +7923,7 @@
             });
 
             if (triggeredNewAlert) {
-                const overdueSpeech = `Alerta de demora. Hay pedidos que superaron el tiempo límite sin entregar. Revisa el panel de alertas.`;
+                const overdueSpeech = `Alerta de demora para mesero y caja. Hay pedidos que superaron el tiempo límite sin llevar a la mesa.`;
                 playBellSound('new_order');
                 speakOrderEvent(overdueSpeech);
                 broadcastStateUpdate('new_order', overdueSpeech);
@@ -6768,24 +7931,26 @@
         }
 
         function triggerSimulatedOverdueReminder() {
-            const aCfg = appState.alertSettings || { overdueMinutes: 10, targetOverdue: 'TODAS' };
+            const aCfg = appState.alertSettings || { overdueMinutes: 10, targetOverdue: 'MESAS,CAJA' };
             const targetTable = appState.tables.find(t => !t.isSpacer && t.items.length > 0) || appState.tables[0];
             if (!targetTable) return;
+            const tableWaiter = targetTable.waiter || activeWaiter;
 
             createPersistentNotification({
                 type: 'OVERDUE_REMINDER',
                 tableId: targetTable.id,
                 tableName: targetTable.name,
                 zone: targetTable.zone,
+                waiter: tableWaiter,
                 title: `⏰ ¡RECORDATORIO DE DEMORA EN ${targetTable.name.toUpperCase()} (${aCfg.overdueMinutes} MIN)!`,
-                message: `El pedido de ${targetTable.name} aún figura como NO ENTREGADO. Recordatorio enviado a: ${aCfg.targetOverdue || 'TODAS'}.`,
-                targets: aCfg.targetOverdue || 'TODAS'
+                message: `El pedido de ${targetTable.name} (Mesero: ${tableWaiter}) aún no se ha llevado a la mesa. Alerta en Mesero y Caja.`,
+                targets: 'MESAS,CAJA'
             });
 
-            const simSpeech = `Alerta de demora en ${targetTable.name}. El pedido lleva más de ${aCfg.overdueMinutes} minutos y aún no ha sido entregado.`;
+            const simSpeech = `Alerta de demora para ${tableWaiter} y Caja Principal en ${targetTable.name}. El pedido lleva más de ${aCfg.overdueMinutes} minutos sin entregar.`;
             playBellSound('new_order');
             speakOrderEvent(simSpeech);
-            showToast(`⏰ Alerta de recordatorio por demora enviada a: ${aCfg.targetOverdue}`, 'danger');
+            showToast(`⏰ Alerta de demora enviada a ${tableWaiter} y a Caja Principal`, 'danger');
             broadcastStateUpdate('new_order', simSpeech);
         }
 
@@ -7213,6 +8378,360 @@
             showToast('✅ Todos los módulos están sincronizados y con audio activo.', 'success');
         }
 
+        /***********************************************************************
+         * 11.11 GENERADOR DE LINKS ÚNICOS POR DISPOSITIVO / TELÉFONO Y MODO KIOSCO
+         ***********************************************************************/
+        function getWaitersList() {
+            if (!appState.waitersCatalog || !Array.isArray(appState.waitersCatalog) || appState.waitersCatalog.length === 0) {
+                appState.waitersCatalog = [...WAITERS_LIST];
+            }
+            return appState.waitersCatalog;
+        }
+
+        function refreshTopWaiterSelectOptions() {
+            const selectEl = document.getElementById('active-waiter-select');
+            if (!selectEl) return;
+            const waiters = getWaitersList();
+            selectEl.innerHTML =
+                waiters.map((w, idx) => `<option value="${w}" class="bg-slate-900">👤 ${w} (Salonero #${idx + 1})</option>`).join('') +
+                `<option value="Caja Principal" class="bg-slate-900">🖥️ Caja Principal (Cajero)</option>`;
+            selectEl.value = activeWaiter;
+        }
+
+        function buildRoleDeviceUrl(roleMode, waiterName = '') {
+            const baseUrl = window.location.origin + window.location.pathname;
+            const params = new URLSearchParams();
+            params.set('estacion', roleMode);
+            if (waiterName) {
+                params.set('salonero', waiterName);
+            }
+            params.set('lock', '1');
+            return `${baseUrl}?${params.toString()}`;
+        }
+
+        function copyDeviceLinkToClipboard(urlText, labelName) {
+            const tempInput = document.createElement('textarea');
+            tempInput.value = urlText;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            try {
+                document.execCommand('copy');
+                showToast(`🔗 Link único de "${labelName}" copiado al portapapeles.`, 'success');
+            } catch (e) {
+                showToast('No se pudo copiar automáticamente.', 'warning');
+            }
+            document.body.removeChild(tempInput);
+        }
+
+        function shareDeviceLinkViaWhatsApp(urlText, labelName) {
+            const msg = `📱 *Acceso Exclusivo RestoBar POS Pro*\n\nRol asignado: *${labelName}*\nAbre este link único en tu teléfono para entrar directamente a tu área de trabajo:\n${urlText}`;
+            window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        function openDeviceLinksQuickModal() {
+            isAdminAuthenticated = true;
+            const lockIcon = document.getElementById('admin-lock-icon');
+            if (lockIcon) lockIcon.className = 'fa-solid fa-chart-pie text-emerald-400';
+            switchStation('ADMIN');
+            switchAdminSubTab('LINKS');
+        }
+
+        function addNewWaiterForLink() {
+            const inp = document.getElementById('new-waiter-link-name');
+            const name = (inp ? inp.value : '').trim();
+            if (!name) {
+                showToast('Escribe el nombre del nuevo salonero.', 'warning');
+                return;
+            }
+            const list = getWaitersList();
+            if (!list.includes(name)) {
+                list.push(name);
+                if (!appState.waiterStats) appState.waiterStats = {};
+                if (!appState.waiterStats[name]) appState.waiterStats[name] = { sales: 0, tips: 0, orders: 0 };
+            }
+            if (inp) inp.value = '';
+            refreshTopWaiterSelectOptions();
+            showToast(`✅ Salonero "${name}" creado con su link único.`, 'success');
+            broadcastStateUpdate();
+        }
+
+        function renderAdminDeviceLinks() {
+            refreshTopWaiterSelectOptions();
+            const waiterGrid = document.getElementById('admin-waiter-links-grid');
+            const stationGrid = document.getElementById('admin-station-links-grid');
+            if (!waiterGrid || !stationGrid) return;
+
+            const waiters = getWaitersList();
+            waiterGrid.innerHTML = waiters.map((wName, idx) => {
+                const linkUrl = buildRoleDeviceUrl('SALONERO', wName);
+                const qrSvg = generateDynamicQrSvgDataUri(linkUrl, '#f59e0b');
+                const safeName = wName.replace(/'/g, "\\'");
+
+                return `
+                    <div class="bg-slate-900 border-2 border-amber-500/40 rounded-2xl p-4 flex flex-col justify-between gap-3 shadow-xl">
+                        <div class="flex items-start justify-between gap-2 border-b border-slate-800 pb-2.5">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-10 h-10 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-black text-base shadow">
+                                    <i class="fa-solid fa-user-tie"></i>
+                                </div>
+                                <div>
+                                    <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">Solo Área Saloneros • #${idx + 1}</span>
+                                    <h5 class="font-black text-white text-base mt-0.5">${wName}</h5>
+                                </div>
+                            </div>
+                            <img src="${qrSvg}" alt="QR ${wName}" class="w-14 h-14 rounded-lg border border-slate-700 shrink-0" title="Escanea con el teléfono de ${wName}">
+                        </div>
+
+                        <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 space-y-1">
+                            <span class="text-[10px] text-slate-400 font-bold block">Link exclusivo para el teléfono de ${wName}:</span>
+                            <input type="text" readonly value="${linkUrl}" onclick="this.select()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 font-mono text-[11px] text-amber-300 focus:outline-none">
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-1.5 text-xs">
+                            <button onclick="copyDeviceLinkToClipboard('${linkUrl}', 'Salonero ${safeName}')" class="py-2 px-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black flex items-center justify-center gap-1 shadow">
+                                <i class="fa-solid fa-copy"></i> Copiar
+                            </button>
+                            <button onclick="shareDeviceLinkViaWhatsApp('${linkUrl}', 'Salonero ${safeName}')" class="py-2 px-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500 text-emerald-300 hover:text-slate-950 border border-emerald-500/40 font-black flex items-center justify-center gap-1 transition-all">
+                                <i class="fa-brands fa-whatsapp"></i> WhatsApp
+                            </button>
+                            <button onclick="applyDeviceRoleLock('SALONERO', '${safeName}')" class="py-2 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center gap-1 border border-slate-700" title="Probar cómo se ve bloqueado en este teléfono">
+                                <i class="fa-solid fa-mobile-screen"></i> Probar
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            const stationsMeta = [
+                {
+                    code: 'COCINA',
+                    title: 'Solo Cocina (KDS)',
+                    badge: 'Exclusivo Pantalla Cocina',
+                    desc: 'Solo tiene acceso al área de Cocina (comandas calientes, preparación y control 86). Oculta Mesas, Barra, Caja y Admin.',
+                    icon: 'fa-fire-burner',
+                    color: 'orange',
+                    hex: '#f97316'
+                },
+                {
+                    code: 'BARRA',
+                    title: 'Solo Barra (Bebidas)',
+                    badge: 'Exclusivo Pantalla Barra',
+                    desc: 'Solo tiene acceso al área de Barra (cubetazos, cocteles, tragos y stock de frío). Oculta Mesas, Cocina, Caja y Admin.',
+                    icon: 'fa-martini-glass-citrus',
+                    color: 'cyan',
+                    hex: '#06b6d4'
+                },
+                {
+                    code: 'CAJA',
+                    title: 'Solo Caja Principal (POS)',
+                    badge: 'Exclusivo Cajero',
+                    desc: 'Acceso directo a Caja Principal, recepción de dinero de saloneros y bandeja de pedidos QR.',
+                    icon: 'fa-cash-register',
+                    color: 'emerald',
+                    hex: '#10b981'
+                }
+            ];
+
+            stationGrid.innerHTML = stationsMeta.map(st => {
+                const linkUrl = buildRoleDeviceUrl(st.code, '');
+                const qrSvg = generateDynamicQrSvgDataUri(linkUrl, st.hex);
+
+                return `
+                    <div class="bg-slate-900 border-2 border-${st.color}-500/40 rounded-2xl p-4 flex flex-col justify-between gap-3 shadow-xl">
+                        <div class="flex items-start justify-between gap-2 border-b border-slate-800 pb-2.5">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-10 h-10 rounded-xl bg-${st.color}-500/20 border border-${st.color}-500/40 text-${st.color}-400 flex items-center justify-center font-black text-base">
+                                    <i class="fa-solid ${st.icon}"></i>
+                                </div>
+                                <div>
+                                    <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-${st.color}-500/20 text-${st.color}-300">${st.badge}</span>
+                                    <h5 class="font-black text-white text-base mt-0.5">${st.title}</h5>
+                                </div>
+                            </div>
+                            <img src="${qrSvg}" alt="QR ${st.title}" class="w-14 h-14 rounded-lg border border-slate-700 shrink-0">
+                        </div>
+
+                        <p class="text-[11px] text-slate-300 leading-relaxed">${st.desc}</p>
+
+                        <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 space-y-1">
+                            <span class="text-[10px] text-slate-400 font-bold block">Link único para instalar en ${st.title}:</span>
+                            <input type="text" readonly value="${linkUrl}" onclick="this.select()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 font-mono text-[11px] text-${st.color}-300 focus:outline-none">
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-1.5 text-xs">
+                            <button onclick="copyDeviceLinkToClipboard('${linkUrl}', '${st.title}')" class="py-2 px-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black flex items-center justify-center gap-1 shadow">
+                                <i class="fa-solid fa-copy"></i> Copiar
+                            </button>
+                            <button onclick="shareDeviceLinkViaWhatsApp('${linkUrl}', '${st.title}')" class="py-2 px-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500 text-emerald-300 hover:text-slate-950 border border-emerald-500/40 font-black flex items-center justify-center gap-1 transition-all">
+                                <i class="fa-brands fa-whatsapp"></i> WhatsApp
+                            </button>
+                            <button onclick="applyDeviceRoleLock('${st.code}', '')" class="py-2 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center gap-1 border border-slate-700" title="Probar modo exclusivo ahora">
+                                <i class="fa-solid fa-mobile-screen"></i> Probar
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function applyDeviceRoleLock(roleMode, waiterName = '') {
+            const cleanRole = (roleMode || '').toUpperCase();
+            const allTabs = {
+                MESAS: document.getElementById('tab-MESAS'),
+                COCINA: document.getElementById('tab-COCINA'),
+                BARRA: document.getElementById('tab-BARRA'),
+                CAJA: document.getElementById('tab-CAJA'),
+                ADMIN: document.getElementById('tab-ADMIN')
+            };
+
+            const waiterBox = document.getElementById('waiter-switcher-box');
+            const lockedBadge = document.getElementById('locked-role-indicator');
+            const lockedLabel = document.getElementById('locked-role-label');
+            const btnDeviceLinks = document.getElementById('btn-top-device-links');
+            const btnWaiterCollect = document.getElementById('btn-top-waiter-collect');
+            const btnLiveOrders = document.getElementById('btn-top-live-orders');
+            const btnLayoutMode = document.getElementById('btn-toggle-layout-mode');
+
+            // Hide all tabs first
+            Object.values(allTabs).forEach(t => { if (t) t.classList.add('hidden'); });
+            if (btnDeviceLinks) btnDeviceLinks.classList.add('hidden');
+
+            if (cleanRole === 'SALONERO' || cleanRole === 'MESAS') {
+                const chosenWaiter = waiterName || activeWaiter || 'Carlos M.';
+                const list = getWaitersList();
+                if (!list.includes(chosenWaiter)) list.push(chosenWaiter);
+                refreshTopWaiterSelectOptions();
+
+                activeWaiter = chosenWaiter;
+                const sel = document.getElementById('active-waiter-select');
+                if (sel) sel.value = chosenWaiter;
+
+                lockedDeviceConfig = {
+                    mode: 'SALONERO',
+                    allowedStation: 'MESAS',
+                    waiterName: chosenWaiter,
+                    label: `SALONERO: ${chosenWaiter}`
+                };
+
+                if (allTabs.MESAS) allTabs.MESAS.classList.remove('hidden');
+                if (waiterBox) waiterBox.classList.add('hidden'); // Lock user switcher so waiter can't impersonate others
+                if (btnWaiterCollect) btnWaiterCollect.classList.remove('hidden');
+                if (btnLiveOrders) btnLiveOrders.classList.remove('hidden');
+                if (btnLayoutMode) btnLayoutMode.classList.add('hidden');
+                switchStation('MESAS');
+            } else if (cleanRole === 'COCINA') {
+                lockedDeviceConfig = {
+                    mode: 'COCINA',
+                    allowedStation: 'COCINA',
+                    waiterName: '',
+                    label: 'SOLO COCINA (KDS)'
+                };
+                if (allTabs.COCINA) allTabs.COCINA.classList.remove('hidden');
+                if (waiterBox) waiterBox.classList.add('hidden');
+                if (btnWaiterCollect) btnWaiterCollect.classList.add('hidden');
+                if (btnLiveOrders) btnLiveOrders.classList.add('hidden');
+                switchStation('COCINA');
+            } else if (cleanRole === 'BARRA') {
+                lockedDeviceConfig = {
+                    mode: 'BARRA',
+                    allowedStation: 'BARRA',
+                    waiterName: '',
+                    label: 'SOLO BARRA (BEBIDAS)'
+                };
+                if (allTabs.BARRA) allTabs.BARRA.classList.remove('hidden');
+                if (waiterBox) waiterBox.classList.add('hidden');
+                if (btnWaiterCollect) btnWaiterCollect.classList.add('hidden');
+                if (btnLiveOrders) btnLiveOrders.classList.add('hidden');
+                switchStation('BARRA');
+            } else if (cleanRole === 'CAJA') {
+                activeWaiter = 'Caja Principal';
+                lockedDeviceConfig = {
+                    mode: 'CAJA',
+                    allowedStation: 'CAJA',
+                    waiterName: 'Caja Principal',
+                    label: 'SOLO CAJA PRINCIPAL'
+                };
+                if (allTabs.CAJA) allTabs.CAJA.classList.remove('hidden');
+                if (waiterBox) waiterBox.classList.add('hidden');
+                if (btnWaiterCollect) btnWaiterCollect.classList.add('hidden');
+                if (btnLiveOrders) btnLiveOrders.classList.remove('hidden');
+                switchStation('CAJA');
+            }
+
+            if (lockedBadge && lockedLabel && lockedDeviceConfig) {
+                lockedBadge.classList.remove('hidden');
+                lockedBadge.classList.add('flex');
+                lockedLabel.textContent = `🔒 ${lockedDeviceConfig.label}`;
+            }
+
+            showToast(`📱 Modo exclusivo activado: ${lockedDeviceConfig ? lockedDeviceConfig.label : cleanRole}`, 'success');
+            renderAllViews();
+        }
+
+        function unlockDeviceRoleWithPinPrompt() {
+            pendingSpecialAuth = { type: 'UNLOCK_DEVICE_ROLE' };
+            document.getElementById('special-auth-title').textContent = 'Desbloquear Teléfono / Estación';
+            document.getElementById('special-auth-desc').textContent = 'Ingresa el PIN del Administrador (1234) para salir del modo exclusivo y mostrar todas las estaciones.';
+            document.getElementById('special-auth-beneficiary-box').classList.add('hidden');
+            document.getElementById('special-auth-pin').value = '';
+            document.getElementById('special-auth-error').classList.add('hidden');
+            document.getElementById('modal-special-auth').classList.remove('hidden');
+            setTimeout(() => document.getElementById('special-auth-pin').focus(), 80);
+        }
+
+        // Extend confirmSpecialAuthAction to support unlocking device role
+        const _origConfirmSpecialAuthAction = confirmSpecialAuthAction;
+        confirmSpecialAuthAction = function() {
+            if (pendingSpecialAuth && pendingSpecialAuth.type === 'UNLOCK_DEVICE_ROLE') {
+                const pin = document.getElementById('special-auth-pin').value.trim();
+                const validCode = appState.adminEditCode || '1234';
+                if (pin !== validCode && pin !== '1234' && pin !== '9999') {
+                    const errEl = document.getElementById('special-auth-error');
+                    errEl.textContent = 'PIN incorrecto. Usa 1234.';
+                    errEl.classList.remove('hidden');
+                    return;
+                }
+                lockedDeviceConfig = null;
+                ['MESAS', 'COCINA', 'BARRA', 'CAJA', 'ADMIN'].forEach(st => {
+                    const t = document.getElementById(`tab-${st}`);
+                    if (t) t.classList.remove('hidden');
+                });
+                const waiterBox = document.getElementById('waiter-switcher-box');
+                const lockedBadge = document.getElementById('locked-role-indicator');
+                const btnDeviceLinks = document.getElementById('btn-top-device-links');
+                const btnWaiterCollect = document.getElementById('btn-top-waiter-collect');
+                const btnLiveOrders = document.getElementById('btn-top-live-orders');
+                const btnLayoutMode = document.getElementById('btn-toggle-layout-mode');
+
+                if (waiterBox) waiterBox.classList.remove('hidden');
+                if (lockedBadge) {
+                    lockedBadge.classList.add('hidden');
+                    lockedBadge.classList.remove('flex');
+                }
+                if (btnDeviceLinks) btnDeviceLinks.classList.remove('hidden');
+                if (btnWaiterCollect) btnWaiterCollect.classList.remove('hidden');
+                if (btnLiveOrders) btnLiveOrders.classList.remove('hidden');
+                if (btnLayoutMode) btnLayoutMode.classList.remove('hidden');
+
+                closeSpecialAuthModal();
+                showToast('🔓 Dispositivo desbloqueado: Todas las estaciones están visibles.', 'info');
+                renderAllViews();
+                return;
+            }
+            _origConfirmSpecialAuthAction();
+        };
+
+        function checkIncomingRoleUrlParams() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const stationParam = params.get('estacion') || params.get('role');
+                const waiterParam = params.get('salonero') || params.get('waiter');
+                if (stationParam) {
+                    applyDeviceRoleLock(stationParam, waiterParam || '');
+                }
+            } catch (e) {}
+        }
+
         // Check URL parameters on startup in case someone scans a real QR URL
         function checkIncomingQrUrlParams() {
             try {
@@ -7288,6 +8807,7 @@
          ***********************************************************************/
         function renderAllViews() {
             renderPersistentAlertsDock();
+            updateLiveOrdersTopBadge();
             renderTablesGrid();
             renderKDSStations();
             renderCashierView();
@@ -7295,7 +8815,12 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
+            if (window.innerWidth < 768) {
+                setFloorViewMode('CUADRICULA');
+            }
+            refreshTopWaiterSelectOptions();
             renderAllViews();
+            checkIncomingRoleUrlParams();
             checkIncomingQrUrlParams();
             // Auto-reconnect Firebase if saved in state
             if (appState.cloudSettings && appState.cloudSettings.firebaseConfigRaw) {
